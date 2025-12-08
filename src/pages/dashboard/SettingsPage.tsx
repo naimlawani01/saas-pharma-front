@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
 import { 
@@ -23,10 +25,34 @@ const tabs = [
   { id: 'sync', name: 'Synchronisation', icon: Database },
 ];
 
+interface Pharmacy {
+  id: number;
+  name: string;
+  address: string | null;
+  city: string | null;
+  country: string;
+  phone: string | null;
+  email: string | null;
+  license_number: string | null;
+  is_active: boolean;
+}
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
   const { user } = useAuthStore();
   const { theme, setTheme, isOnline, pendingSyncCount } = useAppStore();
+  const queryClient = useQueryClient();
+
+  // Récupérer les informations de la pharmacie
+  const { data: pharmacy, isLoading: loadingPharmacy } = useQuery({
+    queryKey: ['pharmacy', user?.pharmacy_id],
+    queryFn: async () => {
+      if (!user?.pharmacy_id) return null;
+      const response = await api.get(`/pharmacies/${user.pharmacy_id}`);
+      return response.data as Pharmacy;
+    },
+    enabled: !!user?.pharmacy_id && !user?.is_superuser,
+  });
 
   return (
     <div className="animate-fadeIn">
@@ -121,62 +147,11 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'pharmacy' && (
-            <div className="card">
-              <h2 className="text-lg font-semibold text-gray-900 mb-6">Informations de la pharmacie</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="label">Nom de la pharmacie</label>
-                  <input
-                    type="text"
-                    defaultValue="Pharmacie Centrale"
-                    className="input"
-                  />
-                </div>
-                <div>
-                  <label className="label">Numéro de licence</label>
-                  <input
-                    type="text"
-                    defaultValue="PH-GN-001"
-                    className="input"
-                  />
-                </div>
-                <div>
-                  <label className="label">Téléphone</label>
-                  <input
-                    type="tel"
-                    defaultValue="+224 620 00 00 00"
-                    className="input"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="label">Adresse</label>
-                  <input
-                    type="text"
-                    defaultValue="Rue de la République, Conakry"
-                    className="input"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="label">Email</label>
-                  <input
-                    type="email"
-                    defaultValue="contact@pharmacie-centrale.gn"
-                    className="input"
-                  />
-                </div>
-              </div>
-              
-              <div className="mt-6 flex justify-end">
-                <button 
-                  className="btn-primary flex items-center gap-2"
-                  onClick={() => toast.success('Pharmacie mise à jour')}
-                >
-                  <Save className="w-5 h-5" />
-                  Enregistrer
-                </button>
-              </div>
-            </div>
+            <PharmacySettingsTab 
+              pharmacy={pharmacy} 
+              isLoading={loadingPharmacy}
+              pharmacyId={user?.pharmacy_id}
+            />
           )}
 
           {activeTab === 'appearance' && (
@@ -358,6 +333,183 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// Composant pour l'onglet Pharmacie
+function PharmacySettingsTab({ 
+  pharmacy, 
+  isLoading, 
+  pharmacyId 
+}: { 
+  pharmacy: Pharmacy | null | undefined; 
+  isLoading: boolean;
+  pharmacyId?: number | null;
+}) {
+  const queryClient = useQueryClient();
+  const [formData, setFormData] = useState({
+    name: '',
+    license_number: '',
+    phone: '',
+    address: '',
+    email: '',
+    city: '',
+    country: 'Guinée',
+  });
+
+  // Mettre à jour le formulaire quand les données de la pharmacie sont chargées
+  useEffect(() => {
+    if (pharmacy) {
+      setFormData({
+        name: pharmacy.name || '',
+        license_number: pharmacy.license_number || '',
+        phone: pharmacy.phone || '',
+        address: pharmacy.address || '',
+        email: pharmacy.email || '',
+        city: pharmacy.city || '',
+        country: pharmacy.country || 'Guinée',
+      });
+    }
+  }, [pharmacy]);
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (!pharmacyId) throw new Error('Aucune pharmacie associée');
+      const response = await api.put(`/pharmacies/${pharmacyId}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Informations de la pharmacie mises à jour');
+      queryClient.invalidateQueries({ queryKey: ['pharmacy', pharmacyId] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.detail || 'Erreur lors de la mise à jour');
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pharmacyId) {
+      toast.error('Aucune pharmacie associée');
+      return;
+    }
+    updateMutation.mutate(formData);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="card">
+        <div className="flex items-center justify-center p-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!pharmacy && !isLoading) {
+    return (
+      <div className="card">
+        <div className="text-center p-12">
+          <Building className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Aucune pharmacie associée
+          </h3>
+          <p className="text-gray-500">
+            Votre compte n'est pas associé à une pharmacie.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card">
+      <h2 className="text-lg font-semibold text-gray-900 mb-6">Informations de la pharmacie</h2>
+      
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2">
+            <label className="label">Nom de la pharmacie *</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="input"
+              required
+            />
+          </div>
+          <div>
+            <label className="label">Numéro de licence</label>
+            <input
+              type="text"
+              value={formData.license_number}
+              onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
+              className="input"
+            />
+          </div>
+          <div>
+            <label className="label">Téléphone</label>
+            <input
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              className="input"
+              placeholder="+224 6XX XX XX XX"
+            />
+          </div>
+          <div>
+            <label className="label">Ville</label>
+            <input
+              type="text"
+              value={formData.city}
+              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              className="input"
+              placeholder="Conakry"
+            />
+          </div>
+          <div>
+            <label className="label">Pays</label>
+            <input
+              type="text"
+              value={formData.country}
+              onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+              className="input"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="label">Adresse</label>
+            <input
+              type="text"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              className="input"
+              placeholder="Rue, quartier..."
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="label">Email</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="input"
+              placeholder="contact@pharmacie.gn"
+            />
+          </div>
+        </div>
+        
+        <div className="mt-6 flex justify-end">
+          <button 
+            type="submit"
+            disabled={updateMutation.isPending}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Save className="w-5 h-5" />
+            {updateMutation.isPending ? 'Enregistrement...' : 'Enregistrer'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
