@@ -51,10 +51,16 @@ interface AlertsPanelProps {
 
 export default function AlertsPanel({ isOpen, onClose }: AlertsPanelProps) {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
+  const { user, accessToken, isAuthenticated } = useAuthStore();
   
   // Vérifier si l'utilisateur est un super admin (sans pharmacie)
   const isSuperAdminGlobal = user?.is_superuser && !user?.pharmacy_id;
+  
+  // Ne faire la requête que si :
+  // 1. L'utilisateur est authentifié
+  // 2. Un token est disponible
+  // 3. L'utilisateur n'est pas un super admin global
+  const shouldFetch = isAuthenticated && !!accessToken && !isSuperAdminGlobal;
 
   // Récupérer les alertes non résolues (uniquement si l'utilisateur a une pharmacie)
   const { data: alerts, refetch } = useQuery({
@@ -63,8 +69,8 @@ export default function AlertsPanel({ isOpen, onClose }: AlertsPanelProps) {
       const response = await api.get('/stock/alerts?is_resolved=false');
       return response.data as Alert[];
     },
-    enabled: !isSuperAdminGlobal, // Désactiver pour les super admins
-    refetchInterval: 60000, // Rafraîchir toutes les minutes
+    enabled: shouldFetch, // Désactiver si pas authentifié, pas de token, ou super admin
+    refetchInterval: shouldFetch ? 60000 : false, // Rafraîchir toutes les minutes seulement si activé
   });
 
   // Marquer comme lu
@@ -253,10 +259,16 @@ export default function AlertsPanel({ isOpen, onClose }: AlertsPanelProps) {
 
 // Hook pour obtenir le nombre d'alertes non lues
 export function useAlertsCount() {
-  const { user } = useAuthStore();
+  const { user, accessToken, isAuthenticated } = useAuthStore();
   
   // Vérifier si l'utilisateur est un super admin (sans pharmacie)
   const isSuperAdminGlobal = user?.is_superuser && !user?.pharmacy_id;
+  
+  // Ne faire la requête que si :
+  // 1. L'utilisateur est authentifié
+  // 2. Un token est disponible
+  // 3. L'utilisateur n'est pas un super admin global
+  const shouldFetch = isAuthenticated && !!accessToken && !isSuperAdminGlobal;
 
   const { data: alerts } = useQuery({
     queryKey: ['alerts-count'],
@@ -264,10 +276,10 @@ export function useAlertsCount() {
       const response = await api.get('/stock/alerts?is_resolved=false&is_read=false');
       return response.data as Alert[];
     },
-    enabled: !isSuperAdminGlobal, // Désactiver pour les super admins
-    refetchInterval: 30000, // Rafraîchir toutes les 30 secondes
-    refetchOnWindowFocus: true, // Rafraîchir quand la fenêtre reprend le focus
-    refetchOnMount: true, // Rafraîchir à chaque montage
+    enabled: shouldFetch, // Désactiver si pas authentifié, pas de token, ou super admin
+    refetchInterval: shouldFetch ? 30000 : false, // Rafraîchir toutes les 30 secondes seulement si activé
+    refetchOnWindowFocus: shouldFetch, // Rafraîchir quand la fenêtre reprend le focus seulement si activé
+    refetchOnMount: shouldFetch, // Rafraîchir à chaque montage seulement si activé
   });
 
   return alerts?.length || 0;

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
+import { useAuthStore } from '@/stores/authStore';
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
@@ -57,6 +58,7 @@ const units = [
 
 export default function ProductFormModal({ isOpen, onClose, product }: ProductFormModalProps) {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   const isEditing = !!product;
   
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
@@ -137,11 +139,22 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
       toast.error('Le prix de vente doit être supérieur à 0');
       return;
     }
+    
+    if (!user?.pharmacy_id) {
+      toast.error('Erreur : aucune pharmacie associée à votre compte');
+      return;
+    }
 
     const dataToSend = {
       ...formData,
+      pharmacy_id: user.pharmacy_id, // Ajouter l'ID de la pharmacie
       expiry_date: formData.expiry_date || null,
       manufacturing_date: formData.manufacturing_date || null,
+      // Convertir les chaînes vides en null pour les champs optionnels
+      barcode: formData.barcode || null,
+      sku: formData.sku || null,
+      description: formData.description || null,
+      category_id: formData.category_id || null,
     };
 
     if (isEditing) {
