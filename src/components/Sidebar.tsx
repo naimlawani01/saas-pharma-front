@@ -45,7 +45,7 @@ const pharmacyNavigation: NavItem[] = [
   { name: 'Ajustements', href: '/stock/adjustments', icon: Edit3, requiresPharmacy: true },
   { name: 'Rapports', href: '/reports', icon: BarChart3, requiresPharmacy: true },
   { name: 'Utilisateurs', href: '/users', icon: UserCog, adminOnly: true, requiresPharmacy: true },
-  { name: 'Paramètres', href: '/settings', icon: Settings, requiresPharmacy: true },
+  // Paramètres retiré - accessible via le menu utilisateur en haut à droite
 ];
 
 // Navigation pour le super admin (gestion globale)
@@ -165,10 +165,10 @@ export default function Sidebar() {
             ))}
           </nav>
           
-          {/* User section */}
-          <div className="border-t border-gray-200 p-4">
-            {!sidebarCollapsed && user && (
-              <div className="flex items-center gap-3 mb-3 px-2">
+          {/* User info (sans bouton déconnexion - maintenant dans le header) */}
+          {!sidebarCollapsed && user && (
+            <div className="border-t border-gray-200 p-4">
+              <div className="flex items-center gap-3 px-2">
                 <div className="w-10 h-10 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center font-medium">
                   {user.full_name?.[0] || user.username[0].toUpperCase()}
                 </div>
@@ -179,20 +179,8 @@ export default function Sidebar() {
                   <p className="text-xs text-gray-500 truncate">{user.role}</p>
                 </div>
               </div>
-            )}
-            
-            <button
-              onClick={logout}
-              className={clsx(
-                'flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors',
-                sidebarCollapsed && 'justify-center'
-              )}
-              title={sidebarCollapsed ? 'Déconnexion' : undefined}
-            >
-              <LogOut className="w-5 h-5" />
-              {!sidebarCollapsed && <span>Déconnexion</span>}
-            </button>
-          </div>
+            </div>
+          )}
           
           {/* Collapse button */}
           <button

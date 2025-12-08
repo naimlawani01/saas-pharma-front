@@ -1,21 +1,42 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useSync } from '@/hooks/useSync';
-import { Menu, Bell, Wifi, WifiOff, RefreshCw, ShieldCheck, Cloud } from 'lucide-react';
+import { Menu, Bell, Wifi, WifiOff, RefreshCw, ShieldCheck, Cloud, LogOut, User, Settings, ChevronDown } from 'lucide-react';
 import AlertsPanel, { useAlertsCount } from './alerts/AlertsPanel';
 import toast from 'react-hot-toast';
 
 export default function Header() {
+  const navigate = useNavigate();
   const { toggleSidebar, isOnline, pendingSyncCount } = useAppStore();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const { sync } = useSync();
   const alertsCount = useAlertsCount();
   const [showAlerts, setShowAlerts] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   
   // Super admin sans pharmacie ?
   const isSuperAdminGlobal = user?.is_superuser && !user?.pharmacy_id;
+
+  // Fermer le menu utilisateur si on clique en dehors
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserMenu]);
 
   const handleSync = async () => {
     if (!isOnline) {
@@ -129,13 +150,63 @@ export default function Header() {
               </button>
             )}
             
-            {/* User avatar */}
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium ${
-              isSuperAdminGlobal 
-                ? 'bg-purple-100 text-purple-700' 
-                : 'bg-primary-100 text-primary-700'
-            }`}>
-              {user?.full_name?.[0] || user?.username?.[0]?.toUpperCase() || '?'}
+            {/* User menu */}
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className={`flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors ${
+                  isSuperAdminGlobal 
+                    ? 'bg-purple-50' 
+                    : 'bg-primary-50'
+                }`}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium text-sm ${
+                  isSuperAdminGlobal 
+                    ? 'bg-purple-100 text-purple-700' 
+                    : 'bg-primary-100 text-primary-700'
+                }`}>
+                  {user?.full_name?.[0] || user?.username?.[0]?.toUpperCase() || '?'}
+                </div>
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Dropdown menu */}
+              {showUserMenu && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <p className="text-sm font-medium text-gray-900">
+                      {user?.full_name || user?.username}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                    {user?.role && (
+                      <p className="text-xs text-gray-500 mt-1 capitalize">{user.role}</p>
+                    )}
+                  </div>
+                  
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        navigate('/settings');
+                        setShowUserMenu(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Paramètres
+                    </button>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setShowUserMenu(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Déconnexion
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
