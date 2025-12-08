@@ -727,7 +727,6 @@ function OnboardingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                     <input
                       type="file"
                       className="hidden"
-                      accept=".xlsx,.xls,.csv"
                       onChange={handleFileChange}
                     />
                   </label>
@@ -963,7 +962,6 @@ function PharmacyDetailModal({
                     <input
                       type="file"
                       className="hidden"
-                      accept=".xlsx,.xls,.csv"
                       onChange={handleFileChange}
                     />
                   </label>
