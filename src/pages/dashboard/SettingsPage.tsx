@@ -41,7 +41,6 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
   const { user } = useAuthStore();
   const { theme, setTheme, isOnline, pendingSyncCount } = useAppStore();
-  const queryClient = useQueryClient();
 
   // Récupérer les informations de la pharmacie
   const { data: pharmacy, isLoading: loadingPharmacy } = useQuery({
