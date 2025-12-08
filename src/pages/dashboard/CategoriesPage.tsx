@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
-import { useAuthStore } from '@/stores/authStore';
 import { 
   Tag, 
   Plus, 
@@ -27,7 +26,6 @@ interface Category {
 
 export default function CategoriesPage() {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
   const [search, setSearch] = useState('');
   const [showFormModal, setShowFormModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
