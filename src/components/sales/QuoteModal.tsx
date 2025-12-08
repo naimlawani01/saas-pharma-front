@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Printer, X, FileText } from 'lucide-react';
+import { Printer, FileText } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 
 interface Product {

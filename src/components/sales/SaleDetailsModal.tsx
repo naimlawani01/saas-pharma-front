@@ -10,9 +10,6 @@ import {
   XCircle, 
   RefreshCcw,
   Package,
-  Calendar,
-  CreditCard,
-  User,
 } from 'lucide-react';
 import clsx from 'clsx';
 

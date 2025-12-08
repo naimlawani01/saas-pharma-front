@@ -16,8 +16,8 @@ interface ProductFormData {
   unit: string;
   purchase_price: number;
   selling_price: number;
-  expiry_date: string;
-  manufacturing_date: string;
+  expiry_date: string | null;
+  manufacturing_date: string | null;
   is_prescription_required: boolean;
   is_active: boolean;
 }

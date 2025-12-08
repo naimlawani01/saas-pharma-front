@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Printer, X, Download } from 'lucide-react';
+import { Printer } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 
 interface SaleItem {

@@ -13,7 +13,7 @@ interface CustomerFormData {
   address: string;
   city: string;
   country: string;
-  date_of_birth: string;
+  date_of_birth: string | null;
   gender: string;
   medical_history: string;
   allergies: string;

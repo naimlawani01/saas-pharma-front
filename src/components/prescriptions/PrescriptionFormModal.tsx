@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
-import { Loader2, Plus, Trash2, Search } from 'lucide-react';
+import { Loader2, Trash2, Search } from 'lucide-react';
 import { Prescription, PrescriptionCreate } from '@/types/prescription';
 
 interface PrescriptionItemForm {

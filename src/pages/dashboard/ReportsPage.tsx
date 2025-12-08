@@ -26,6 +26,8 @@ import {
   Legend,
   Area,
   AreaChart,
+  Line,
+  LineChart,
 } from 'recharts';
 import clsx from 'clsx';
 

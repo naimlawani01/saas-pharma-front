@@ -1,6 +1,6 @@
 import Modal from '@/components/ui/Modal';
 import { Prescription, PrescriptionStatus } from '@/types/prescription';
-import { FileText, Calendar, User, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { FileText, Calendar, User, Clock } from 'lucide-react';
 import clsx from 'clsx';
 
 interface PrescriptionDetailsModalProps {
@@ -150,7 +150,7 @@ export default function PrescriptionDetailsModal({
             Produits prescrits ({prescription.items.length})
           </h4>
           <div className="space-y-4">
-            {prescription.items.map((item, index) => (
+            {prescription.items.map((item) => (
               <div key={item.id} className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
