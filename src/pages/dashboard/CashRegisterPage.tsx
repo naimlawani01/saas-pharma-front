@@ -39,6 +39,15 @@ export default function CashRegisterPage() {
     enabled: navigator.onLine, // Si offline, on s'appuie sur la session locale
   });
 
+  // Récupérer la liste des caisses pour vérifier s'il en existe
+  const { data: cashRegisters } = useQuery({
+    queryKey: ['cash-registers-check'],
+    queryFn: async () => {
+      const response = await api.get('/cash/registers');
+      return response.data as CashRegister[];
+    },
+  });
+
   // Charger une session locale si offline
   useEffect(() => {
     const loadLocalSession = async () => {
@@ -194,21 +203,45 @@ export default function CashRegisterPage() {
           </div>
         </div>
       ) : (
-        <div className="card p-12 text-center">
-          <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Aucune session de caisse ouverte
-          </h3>
-          <p className="text-gray-500 mb-6">
-            Ouvrez une session pour commencer à enregistrer les transactions
-          </p>
-          <button 
-            onClick={() => setShowOpenModal(true)}
-            className="btn-primary"
-          >
-            Ouvrir la caisse
-          </button>
-        </div>
+        <>
+          {/* Message si aucune caisse n'existe */}
+          {(!cashRegisters || cashRegisters.length === 0) ? (
+            <div className="card p-12 text-center">
+              <SettingsIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Aucune caisse enregistreuse
+              </h3>
+              <p className="text-gray-500 mb-6">
+                Vous devez créer au moins une caisse avant de pouvoir ouvrir une session.
+                {user?.role === 'admin' && ' En tant qu\'administrateur, vous pouvez créer des caisses.'}
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button 
+                  onClick={() => navigate('/cash/registers')}
+                  className="btn-primary"
+                >
+                  Créer une caisse
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="card p-12 text-center">
+              <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Aucune session de caisse ouverte
+              </h3>
+              <p className="text-gray-500 mb-6">
+                Ouvrez une session pour commencer à enregistrer les transactions
+              </p>
+              <button 
+                onClick={() => setShowOpenModal(true)}
+                className="btn-primary"
+              >
+                Ouvrir la caisse
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Modals */}
@@ -344,6 +377,49 @@ function OpenCashModal({ pharmacyId, onClose, onSuccess }: OpenCashModalProps) {
         <div className="modal-content max-w-md">
           <div className="flex items-center justify-center p-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Si aucune caisse n'existe, afficher un message pour créer une caisse
+  if (!cashRegisters || cashRegisters.length === 0) {
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content max-w-md">
+          <div className="modal-header">
+            <h3 className="modal-title">Aucune caisse disponible</h3>
+            <button onClick={onClose} className="modal-close">&times;</button>
+          </div>
+          <div className="modal-body">
+            <div className="text-center py-6">
+              <SettingsIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                Aucune caisse enregistreuse
+              </h4>
+              <p className="text-gray-600 mb-6">
+                Vous devez créer au moins une caisse avant de pouvoir ouvrir une session.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={onClose}
+                  className="btn-secondary flex-1"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={() => {
+                    onClose();
+                    // Naviguer vers la page de gestion des caisses
+                    window.location.href = '/cash/registers';
+                  }}
+                  className="btn-primary flex-1"
+                >
+                  Créer une caisse
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

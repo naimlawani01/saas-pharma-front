@@ -35,6 +35,7 @@ interface NavItem {
 const pharmacyNavigation: NavItem[] = [
   { name: 'Tableau de bord', href: '/', icon: LayoutDashboard, requiresPharmacy: true },
   { name: 'Caisse', href: '/cash', icon: DollarSign, requiresPharmacy: true },
+  { name: 'Gestion Caisses', href: '/cash/registers', icon: Settings, adminOnly: true, requiresPharmacy: true },
   { name: 'Produits', href: '/products', icon: Package, requiresPharmacy: true },
   { name: 'Ventes', href: '/sales', icon: ShoppingCart, requiresPharmacy: true },
   { name: 'Clients', href: '/customers', icon: Users, requiresPharmacy: true },
