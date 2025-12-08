@@ -24,6 +24,7 @@ interface Product {
   id: number;
   name: string;
   quantity: number;
+  unit: string;
 }
 
 const ADJUSTMENT_REASON_LABELS: Record<AdjustmentReason, string> = {

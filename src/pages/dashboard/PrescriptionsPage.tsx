@@ -9,11 +9,7 @@ import {
   FileText,
   Calendar,
   User,
-  UserCheck,
   Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
   Edit,
   Trash2,
   Eye,
@@ -136,16 +132,6 @@ export default function PrescriptionsPage() {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-    });
-  };
-
-  const formatDateTime = (date: string) => {
-    return new Date(date).toLocaleString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   };
 
@@ -395,7 +381,7 @@ export default function PrescriptionsPage() {
           message={`Êtes-vous sûr de vouloir supprimer la prescription ${prescriptionToDelete.prescription_number} ?`}
           confirmText="Supprimer"
           cancelText="Annuler"
-          variant="danger"
+          type="danger"
         />
       )}
     </div>

@@ -9,7 +9,6 @@ import {
   Edit,
   Trash2,
   AlertTriangle,
-  Eye,
   FileSpreadsheet,
   FileText,
 } from 'lucide-react';

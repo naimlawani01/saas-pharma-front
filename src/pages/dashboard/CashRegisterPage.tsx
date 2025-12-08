@@ -245,6 +245,7 @@ interface OpenCashModalProps {
 }
 
 function OpenCashModal({ pharmacyId, onClose, onSuccess }: OpenCashModalProps) {
+  const user = useAuthStore((state) => state.user);
   const [formData, setFormData] = useState({
     cash_register_id: 0, // Aucune caisse sélectionnée par défaut
     opening_balance: 50000,
@@ -314,7 +315,6 @@ function OpenCashModal({ pharmacyId, onClose, onSuccess }: OpenCashModalProps) {
         };
 
         await saveToOffline(cashStore, 'pending_session', offlineSession);
-        setLocalSession(offlineSession);
 
         toast.success('Ouverture de caisse enregistrée localement. Synchronisation automatique à la reconnexion.');
         onSuccess();

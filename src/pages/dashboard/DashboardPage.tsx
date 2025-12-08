@@ -14,8 +14,6 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { 
-  LineChart, 
-  Line, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -25,7 +23,6 @@ import {
   Bar,
   Area,
   AreaChart,
-  Legend,
 } from 'recharts';
 
 export default function DashboardPage() {

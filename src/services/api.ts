@@ -87,19 +87,19 @@ api.interceptors.response.use(
       
       // Déterminer le type d'entité et l'endpoint
       const url = originalRequest.url || '';
-      const method = (originalRequest.method || 'GET').toUpperCase() as 'POST' | 'PUT' | 'DELETE';
+      const method = (originalRequest.method || 'GET').toUpperCase();
       
-      let entity: 'sale' | 'product' | 'customer' | 'supplier' | 'order' = 'sale';
-      if (url.includes('/products')) entity = 'product';
-      else if (url.includes('/customers')) entity = 'customer';
-      else if (url.includes('/suppliers')) entity = 'supplier';
-      else if (url.includes('/orders')) entity = 'order';
-      // Les sessions de caisse sont traitées comme des ventes pour la sync
-      else if (url.includes('/cash')) entity = 'sale';
-      
-      // Sauvegarder l'opération pour synchronisation ultérieure
-      if (method !== 'GET') {
+      // Sauvegarder l'opération pour synchronisation ultérieure (seulement pour les méthodes non-GET)
+      if (method !== 'GET' && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
         const type = method === 'POST' ? 'create' : method === 'PUT' ? 'update' : 'delete';
+        
+        let entity: 'sale' | 'product' | 'customer' | 'supplier' | 'order' = 'sale';
+        if (url.includes('/products')) entity = 'product';
+        else if (url.includes('/customers')) entity = 'customer';
+        else if (url.includes('/suppliers')) entity = 'supplier';
+        else if (url.includes('/orders')) entity = 'order';
+        // Les sessions de caisse sont traitées comme des ventes pour la sync
+        else if (url.includes('/cash')) entity = 'sale';
         await syncService.savePendingOperation(
           type,
           entity,

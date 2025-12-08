@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { 
-  BarChart3,
   TrendingUp,
-  Download,
   Calendar,
   DollarSign,
   Package,
@@ -15,8 +13,6 @@ import {
 import toast from 'react-hot-toast';
 import { exportToCSV, exportToPDF, generateHTMLTable, formatCurrency as formatCurrencyExport } from '@/utils/exportUtils';
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   PieChart,
@@ -421,7 +417,7 @@ export default function ReportsPage() {
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                       padding: '12px',
                     }}
-                    formatter={(value: number, name: string, props: any) => {
+                    formatter={(value: number, _name: string, props: any) => {
                       const total = salesByPayment.reduce((sum: number, item: any) => sum + item.total, 0);
                       const percent = ((value / total) * 100).toFixed(1);
                       return [

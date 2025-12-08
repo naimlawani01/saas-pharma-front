@@ -12,7 +12,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { CashSession, CashSessionStatus, CashRegister } from '@/types/cash';
-import { exportToPDF, generateHTMLTable, formatCurrency } from '@/utils/exportUtils';
+import { exportToPDF, generateHTMLTable } from '@/utils/exportUtils';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
 
 export default function CashHistoryPage() {
