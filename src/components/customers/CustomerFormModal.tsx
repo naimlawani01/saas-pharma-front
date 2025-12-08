@@ -182,8 +182,8 @@ export default function CustomerFormModal({ isOpen, onClose, customer }: Custome
             <label className="label">Date de naissance</label>
             <input
               type="date"
-              value={formData.date_of_birth}
-              onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+              value={formData.date_of_birth || ''}
+              onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value || null })}
               className="input"
             />
           </div>
