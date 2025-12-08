@@ -1,7 +1,20 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/stores/authStore';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+// Récupérer l'URL de l'API depuis les variables d'environnement
+let API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+
+// En production, forcer HTTPS si l'URL est en HTTP
+// Cela évite les problèmes de Mixed Content et les redirections 307
+if (import.meta.env.PROD && API_URL.startsWith('http://')) {
+  console.warn('[API Config] URL HTTP détectée en production, conversion automatique en HTTPS');
+  API_URL = API_URL.replace('http://', 'https://');
+}
+
+// Log pour déboguer (uniquement en développement)
+if (import.meta.env.DEV) {
+  console.log('[API Config] API_URL:', API_URL);
+}
 
 export const api = axios.create({
   baseURL: API_URL,
