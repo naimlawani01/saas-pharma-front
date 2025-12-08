@@ -295,8 +295,8 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
             <label className="label">Date de fabrication</label>
             <input
               type="date"
-              value={formData.manufacturing_date}
-              onChange={(e) => setFormData({ ...formData, manufacturing_date: e.target.value })}
+              value={formData.manufacturing_date || ''}
+              onChange={(e) => setFormData({ ...formData, manufacturing_date: e.target.value || null })}
               className="input"
             />
           </div>
@@ -306,8 +306,8 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
             <label className="label">Date d'expiration</label>
             <input
               type="date"
-              value={formData.expiry_date}
-              onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+              value={formData.expiry_date || ''}
+              onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value || null })}
               className="input"
             />
           </div>

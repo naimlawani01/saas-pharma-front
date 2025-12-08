@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 export default function Header() {
   const { toggleSidebar, isOnline, pendingSyncCount } = useAppStore();
   const { user } = useAuthStore();
-  const { sync, syncStatus } = useSync();
+  const { sync } = useSync();
   const alertsCount = useAlertsCount();
   const [showAlerts, setShowAlerts] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
