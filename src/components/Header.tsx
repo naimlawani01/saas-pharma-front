@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useSync } from '@/hooks/useSync';
-import { Menu, Bell, Wifi, WifiOff, RefreshCw, ShieldCheck, Cloud, LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import { Menu, Bell, Wifi, WifiOff, RefreshCw, ShieldCheck, Cloud, LogOut, Settings, ChevronDown } from 'lucide-react';
 import AlertsPanel, { useAlertsCount } from './alerts/AlertsPanel';
 import toast from 'react-hot-toast';
 

@@ -21,7 +21,7 @@ interface AuthState {
   isLoading: boolean;
   
   // Actions
-  login: (credentials: { email?: string; username?: string; password: string }) => Promise<void>;
+  login: (credentials: { email?: string; username?: string; password: string }) => Promise<User | null>;
   logout: () => void;
   refreshAuth: () => Promise<void>;
   setUser: (user: User) => void;
@@ -51,7 +51,9 @@ export const useAuthStore = create<AuthState>()(
           
           // Récupérer les infos utilisateur
           const userResponse = await api.get('/auth/me');
-          set({ user: userResponse.data });
+          const user = userResponse.data;
+          set({ user });
+          return user; // Retourner l'utilisateur pour la redirection
         } catch (error) {
           set({ isAuthenticated: false, user: null });
           throw error;

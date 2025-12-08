@@ -9,7 +9,6 @@ import {
   Truck,
   BarChart3,
   Settings,
-  LogOut,
   ChevronLeft,
   ChevronRight,
   X,
@@ -55,7 +54,7 @@ const superAdminNavigation: NavItem[] = [
 
 export default function Sidebar() {
   const { sidebarOpen, sidebarCollapsed, toggleSidebar, toggleSidebarCollapse } = useAppStore();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   
   return (
     <>

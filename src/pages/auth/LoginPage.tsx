@@ -25,13 +25,19 @@ export default function LoginPage() {
     try {
       // Déterminer si c'est un email ou username
       const isEmail = formData.identifier.includes('@');
-      await login({
+      const user = await login({
         ...(isEmail ? { email: formData.identifier } : { username: formData.identifier }),
         password: formData.password,
       });
       
       toast.success('Connexion réussie !');
-      navigate('/');
+      
+      // Rediriger les super admins vers /admin, les autres vers /
+      if (user?.is_superuser && !user?.pharmacy_id) {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     } catch (error: any) {
       const message = error.response?.data?.detail || 'Erreur de connexion';
       toast.error(message);
