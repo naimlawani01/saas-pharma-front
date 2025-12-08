@@ -113,8 +113,6 @@ export default function DashboardPage() {
           icon={ShoppingCart}
           iconBg="bg-green-100"
           iconColor="text-green-600"
-          trend={12}
-          trendUp
         />
         <StatCard
           title="Ventes du mois"
@@ -123,8 +121,6 @@ export default function DashboardPage() {
           icon={DollarSign}
           iconBg="bg-blue-100"
           iconColor="text-blue-600"
-          trend={8}
-          trendUp
         />
         <StatCard
           title="Produits en stock"
@@ -141,8 +137,6 @@ export default function DashboardPage() {
           icon={Users}
           iconBg="bg-orange-100"
           iconColor="text-orange-600"
-          trend={5}
-          trendUp
         />
       </div>
 
