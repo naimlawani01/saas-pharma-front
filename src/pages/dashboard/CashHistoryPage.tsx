@@ -13,7 +13,6 @@ import {
   Clock,
   DollarSign,
   Calculator,
-  Eye,
   Calendar,
 } from 'lucide-react';
 import { CashSession, CashSessionStatus, CashRegister } from '@/types/cash';
