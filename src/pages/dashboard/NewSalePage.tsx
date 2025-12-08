@@ -22,10 +22,14 @@ import {
   Wifi,
   WifiOff,
   FileText,
+  AlertCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
 import { isOfflineError } from '@/utils/offlineHandler';
+import { CashSession, CashSessionStatus } from '@/types/cash';
+import { getFromOffline } from '@/services/offlineStorage';
+import { cashStore } from '@/services/offlineStorage';
 
 interface Product {
   id: number;
@@ -92,6 +96,27 @@ export default function NewSalePage() {
     },
     enabled: !!customerId,
   });
+
+  // Vérifier si une session de caisse est ouverte
+  const { data: currentCashSession } = useQuery({
+    queryKey: ['current-cash-session'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/cash/sessions/current');
+        return response.data as CashSession | null;
+      } catch {
+        // Si erreur (offline ou pas de session), vérifier la session locale
+        const localSession = await getFromOffline<CashSession>(cashStore, 'pending_session');
+        return localSession;
+      }
+    },
+    refetchInterval: 10000, // Rafraîchir toutes les 10s
+    refetchOnWindowFocus: true,
+  });
+
+  // Vérifier si une caisse est ouverte (serveur ou locale)
+  const isCashOpen = currentCashSession?.status === CashSessionStatus.OPEN || 
+                     currentCashSession?.status === CashSessionStatus.PENDING_OFFLINE;
 
   // Rechercher les produits
   const { data: products } = useQuery({
@@ -371,6 +396,13 @@ export default function NewSalePage() {
       toast.error('Ajoutez des produits au panier');
       return;
     }
+    
+    // Vérifier si une caisse est ouverte
+    if (!isCashOpen) {
+      toast.error('Vous devez ouvrir une caisse avant de pouvoir effectuer une vente');
+      return;
+    }
+    
     createSale.mutate();
   };
 
@@ -389,6 +421,27 @@ export default function NewSalePage() {
           <p className="text-gray-500">Créer une nouvelle transaction</p>
         </div>
       </div>
+
+      {/* Alerte si aucune caisse n'est ouverte */}
+      {!isCashOpen && (
+        <div className="card bg-yellow-50 border-yellow-200 mb-6">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="font-medium text-yellow-900">Aucune caisse ouverte</p>
+              <p className="text-sm text-yellow-700">
+                Vous devez ouvrir une session de caisse avant de pouvoir effectuer des ventes.
+                <button
+                  onClick={() => navigate('/cash')}
+                  className="ml-2 underline font-medium hover:text-yellow-900"
+                >
+                  Ouvrir une caisse
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Product search and cart */}
@@ -723,8 +776,9 @@ export default function NewSalePage() {
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={cart.length === 0 || createSale.isPending}
-                className="btn-primary flex-1 py-3 text-base"
+                disabled={cart.length === 0 || createSale.isPending || !isCashOpen}
+                className="btn-primary flex-1 py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                title={!isCashOpen ? 'Ouvrez une caisse avant de valider la vente' : ''}
               >
                 {createSale.isPending ? 'Traitement...' : 'Valider la vente'}
               </button>
