@@ -18,6 +18,7 @@ import {
   Edit3,
   DollarSign,
   FileText,
+  Tag,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -35,7 +36,8 @@ const pharmacyNavigation: NavItem[] = [
   { name: 'Tableau de bord', href: '/', icon: LayoutDashboard, requiresPharmacy: true },
   { name: 'Caisse', href: '/cash', icon: DollarSign, requiresPharmacy: true },
   { name: 'Gestion Caisses', href: '/cash/registers', icon: Settings, adminOnly: true, requiresPharmacy: true },
-  { name: 'Produits', href: '/products', icon: Package, requiresPharmacy: true },
+        { name: 'Produits', href: '/products', icon: Package, requiresPharmacy: true },
+        { name: 'Catégories', href: '/products/categories', icon: Tag, requiresPharmacy: true },
   { name: 'Ventes', href: '/sales', icon: ShoppingCart, requiresPharmacy: true },
   { name: 'Clients', href: '/customers', icon: Users, requiresPharmacy: true },
   { name: 'Prescriptions', href: '/prescriptions', icon: FileText, requiresPharmacy: true },

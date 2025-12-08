@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   FileSpreadsheet,
   FileText,
+  Tag,
+  X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
@@ -26,6 +28,10 @@ interface Product {
   barcode: string | null;
   sku: string | null;
   category_id: number | null;
+  category?: {
+    id: number;
+    name: string;
+  } | null;
   quantity: number;
   min_quantity: number;
   unit: string;
@@ -36,10 +42,17 @@ interface Product {
   is_prescription_required: boolean;
 }
 
+interface Category {
+  id: number;
+  name: string;
+  description: string | null;
+}
+
 export default function ProductsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [showLowStock, setShowLowStock] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   
   // Modal states
   const [showFormModal, setShowFormModal] = useState(false);
@@ -47,13 +60,23 @@ export default function ProductsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
+  // Récupérer les catégories
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const response = await api.get('/products/categories');
+      return response.data as Category[];
+    },
+  });
+
   // Récupérer les produits
   const { data: products, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['products', search, showLowStock],
+    queryKey: ['products', search, showLowStock, selectedCategoryId],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (search) params.append('search', search);
       if (showLowStock) params.append('low_stock', 'true');
+      if (selectedCategoryId) params.append('category_id', selectedCategoryId.toString());
       const response = await api.get(`/products?${params}`);
       return response.data as Product[];
     },
@@ -218,6 +241,33 @@ export default function ProductsPage() {
               className="input pl-10"
             />
           </div>
+          
+          {/* Sélecteur de catégorie */}
+          <div className="relative min-w-[200px]">
+            <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
+            <select
+              value={selectedCategoryId || ''}
+              onChange={(e) => setSelectedCategoryId(e.target.value ? parseInt(e.target.value) : null)}
+              className="input pl-10 w-full appearance-none cursor-pointer pr-8"
+            >
+              <option value="">Toutes les catégories</option>
+              {categories?.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+            {selectedCategoryId && (
+              <button
+                onClick={() => setSelectedCategoryId(null)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
+                title="Effacer le filtre"
+              >
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            )}
+          </div>
+          
           <button
             onClick={() => setShowLowStock(!showLowStock)}
             className={clsx(
@@ -251,6 +301,7 @@ export default function ProductsPage() {
               <thead className="bg-gray-50">
                 <tr className="text-left text-sm text-gray-500">
                   <th className="px-6 py-4 font-medium">Produit</th>
+                  <th className="px-6 py-4 font-medium">Catégorie</th>
                   <th className="px-6 py-4 font-medium">Stock</th>
                   <th className="px-6 py-4 font-medium">Prix d'achat</th>
                   <th className="px-6 py-4 font-medium">Prix de vente</th>
@@ -277,6 +328,15 @@ export default function ProductsPage() {
                           </div>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {product.category ? (
+                        <span className="badge badge-info">
+                          {product.category.name}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-sm">-</span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span className={clsx(

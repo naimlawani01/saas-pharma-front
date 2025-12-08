@@ -14,6 +14,7 @@ import LoginPage from '@/pages/auth/LoginPage';
 // Pages Dashboard
 import DashboardPage from '@/pages/dashboard/DashboardPage';
 import ProductsPage from '@/pages/dashboard/ProductsPage';
+import CategoriesPage from '@/pages/dashboard/CategoriesPage';
 import SalesPage from '@/pages/dashboard/SalesPage';
 import NewSalePage from '@/pages/dashboard/NewSalePage';
 import CustomersPage from '@/pages/dashboard/CustomersPage';
@@ -128,6 +129,7 @@ function App() {
         {/* Routes nécessitant une pharmacie */}
         <Route path="/" element={<PharmacyRoute><DashboardPage /></PharmacyRoute>} />
         <Route path="/products" element={<PharmacyRoute><ProductsPage /></PharmacyRoute>} />
+        <Route path="/products/categories" element={<PharmacyRoute><CategoriesPage /></PharmacyRoute>} />
         <Route path="/sales" element={<PharmacyRoute><SalesPage /></PharmacyRoute>} />
         <Route path="/sales/new" element={<PharmacyRoute><NewSalePage /></PharmacyRoute>} />
         <Route path="/customers" element={<PharmacyRoute><CustomersPage /></PharmacyRoute>} />
