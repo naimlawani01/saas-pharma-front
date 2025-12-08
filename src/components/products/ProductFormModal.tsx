@@ -196,8 +196,8 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
           <div className="md:col-span-2">
             <label className="label">Description</label>
             <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              value={formData.description || ''}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value || null })}
               className="input min-h-[80px]"
               placeholder="Description du produit..."
             />
@@ -208,8 +208,8 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
             <label className="label">Code-barres</label>
             <input
               type="text"
-              value={formData.barcode}
-              onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+              value={formData.barcode || ''}
+              onChange={(e) => setFormData({ ...formData, barcode: e.target.value || null })}
               className="input"
               placeholder="1234567890123"
             />
@@ -220,8 +220,8 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
             <label className="label">SKU / Référence</label>
             <input
               type="text"
-              value={formData.sku}
-              onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+              value={formData.sku || ''}
+              onChange={(e) => setFormData({ ...formData, sku: e.target.value || null })}
               className="input"
               placeholder="PARA001"
             />
