@@ -8,9 +8,9 @@ import { Loader2 } from 'lucide-react';
 
 interface ProductFormData {
   name: string;
-  description: string;
-  barcode: string;
-  sku: string;
+  description: string | null;
+  barcode: string | null;
+  sku: string | null;
   category_id: number | null;
   quantity: number;
   min_quantity: number;
@@ -21,6 +21,7 @@ interface ProductFormData {
   manufacturing_date: string | null;
   is_prescription_required: boolean;
   is_active: boolean;
+  pharmacy_id?: number; // Optionnel car ajouté seulement lors de l'envoi
 }
 
 interface ProductFormModalProps {
@@ -145,7 +146,8 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
       return;
     }
 
-    const dataToSend = {
+    // Préparer les données pour l'API (inclut pharmacy_id pour la création)
+    const dataToSend: ProductFormData & { pharmacy_id: number } = {
       ...formData,
       pharmacy_id: user.pharmacy_id, // Ajouter l'ID de la pharmacie
       expiry_date: formData.expiry_date || null,
@@ -158,7 +160,9 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
     };
 
     if (isEditing) {
-      updateMutation.mutate(dataToSend);
+      // Pour la mise à jour, on n'a pas besoin de pharmacy_id
+      const { pharmacy_id, ...updateData } = dataToSend;
+      updateMutation.mutate(updateData);
     } else {
       createMutation.mutate(dataToSend);
     }
