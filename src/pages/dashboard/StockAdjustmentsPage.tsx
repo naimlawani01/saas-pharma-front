@@ -7,7 +7,6 @@ import {
   Plus,
   RefreshCw,
   Search,
-  FileText,
   Package,
   Calendar,
   Tag,
@@ -17,10 +16,15 @@ import {
   ArrowDownCircle,
 } from 'lucide-react';
 import { StockAdjustment, AdjustmentReason } from '@/types/stock';
-import { Product } from '@/types';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
 import clsx from 'clsx';
 import Modal from '@/components/ui/Modal';
+
+interface Product {
+  id: number;
+  name: string;
+  quantity: number;
+}
 
 const ADJUSTMENT_REASON_LABELS: Record<AdjustmentReason, string> = {
   [AdjustmentReason.INVENTORY]: 'Inventaire',

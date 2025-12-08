@@ -45,7 +45,7 @@ export function exportToCSV(data: any[], filename: string, headers?: string[]) {
 }
 
 // Export en PDF simple (format texte pour impression)
-export function exportToPDF(title: string, content: string, filename: string) {
+export function exportToPDF(title: string, content: string, _filename: string) {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
     alert('Veuillez autoriser les pop-ups pour exporter en PDF');
@@ -252,7 +252,7 @@ export function exportProductsReport(products: any[]) {
 export const exportToExcel = exportToCSV;
 
 // Export rapport général en PDF
-export function exportDashboardPDF(dashboardData: any, salesData: any[], topProducts: any[]) {
+export function exportDashboardPDF(dashboardData: any, _salesData: any[], topProducts: any[]) {
   const content = `
     <h2>Résumé</h2>
     <table>

@@ -97,10 +97,9 @@ api.interceptors.response.use(
       // Les sessions de caisse sont traitées comme des ventes pour la sync
       else if (url.includes('/cash')) entity = 'sale';
       
-      const type = method === 'POST' ? 'create' : method === 'PUT' ? 'update' : 'delete';
-      
       // Sauvegarder l'opération pour synchronisation ultérieure
       if (method !== 'GET') {
+        const type = method === 'POST' ? 'create' : method === 'PUT' ? 'update' : 'delete';
         await syncService.savePendingOperation(
           type,
           entity,

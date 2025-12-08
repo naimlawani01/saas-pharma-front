@@ -9,7 +9,6 @@ import {
   RefreshCw,
   Package,
   Truck,
-  Calendar,
   Eye,
   CheckCircle,
   XCircle,
@@ -21,7 +20,6 @@ import toast from 'react-hot-toast';
 import clsx from 'clsx';
 import Modal from '@/components/ui/Modal';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
-import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 interface OrderItem {
   id: number;
@@ -73,6 +71,7 @@ interface Product {
   purchase_price: number;
   quantity: number;
   min_quantity: number;
+  barcode?: string | null;
 }
 
 export default function SupplierOrdersPage() {
@@ -82,7 +81,6 @@ export default function SupplierOrdersPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<SupplierOrder | null>(null);
-  const [showConfirmReceive, setShowConfirmReceive] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [selectedItemForReturn, setSelectedItemForReturn] = useState<OrderItem | null>(null);
@@ -123,24 +121,6 @@ export default function SupplierOrdersPage() {
     queryFn: async () => {
       const response = await api.get('/products');
       return response.data as Product[];
-    },
-  });
-
-  // Mutation pour recevoir une commande (ancienne méthode - gardée pour compatibilité)
-  const receiveMutation = useMutation({
-    mutationFn: async (orderId: number) => {
-      return api.put(`/suppliers/orders/${orderId}/receive`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['supplier-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      toast.success('Commande reçue et stock mis à jour');
-      setShowConfirmReceive(false);
-      setShowDetailsModal(false);
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la réception');
     },
   });
 

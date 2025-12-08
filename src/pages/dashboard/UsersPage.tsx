@@ -12,7 +12,6 @@ import {
   UserX,
   Edit,
   Trash2,
-  Mail,
   Key,
 } from 'lucide-react';
 import toast from 'react-hot-toast';

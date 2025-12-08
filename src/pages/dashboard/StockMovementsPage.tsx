@@ -11,11 +11,10 @@ import {
   FileSpreadsheet,
   Package,
   Calendar,
-  User,
   Tag,
 } from 'lucide-react';
-import { StockMovement, MovementType, AdjustmentReason } from '@/types/stock';
-import { exportToPDF, exportToExcel, generateHTMLTable, formatCurrency } from '@/utils/exportUtils';
+import { StockMovement, MovementType } from '@/types/stock';
+import { exportToPDF, exportToExcel, generateHTMLTable } from '@/utils/exportUtils';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
 import clsx from 'clsx';
 
@@ -41,16 +40,6 @@ const MOVEMENT_TYPE_COLORS: Record<MovementType, string> = {
   [MovementType.TRANSFER]: 'bg-purple-100 text-purple-800 border-purple-200',
 };
 
-const ADJUSTMENT_REASON_LABELS: Record<string, string> = {
-  'inventory': 'Inventaire',
-  'expiry': 'Expiration',
-  'damage': 'Dommage',
-  'loss': 'Perte',
-  'theft': 'Vol',
-  'error': 'Erreur',
-  'return_supplier': 'Retour fournisseur',
-  'other': 'Autre',
-};
 
 const REFERENCE_TYPE_LABELS: Record<string, string> = {
   'sale': 'Vente',
@@ -112,7 +101,7 @@ export default function StockMovementsPage() {
       <h2 style="margin-top: 20px;">Historique des mouvements</h2>
       ${generateHTMLTable(filteredMovements, [
         { key: 'created_at', label: 'Date', format: (v) => new Date(v).toLocaleDateString('fr-FR') + ' ' + new Date(v).toLocaleTimeString('fr-FR') },
-        { key: 'product.name', label: 'Produit', format: (v, item) => item.product?.name || `Produit #${item.product_id}` },
+        { key: 'product.name', label: 'Produit', format: (_v, item) => item.product?.name || `Produit #${item.product_id}` },
         { key: 'movement_type', label: 'Type', format: (v) => MOVEMENT_TYPE_LABELS[v as MovementType] },
         { key: 'quantity', label: 'Quantité' },
         { key: 'quantity_before', label: 'Avant' },

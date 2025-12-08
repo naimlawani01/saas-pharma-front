@@ -9,8 +9,6 @@ import {
   getPendingOperations,
   removePendingOperation,
   saveToOffline,
-  getFromOffline,
-  PendingOperation as OfflinePendingOperation,
 } from './offlineStorage';
 import { useAppStore } from '@/stores/appStore';
 import toast from 'react-hot-toast';

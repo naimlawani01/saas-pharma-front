@@ -497,7 +497,7 @@ export default function ReportsPage() {
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                       padding: '12px',
                     }}
-                    formatter={(value: number, name: string, props: any) => [
+                    formatter={(value: number, _name: string, props: any) => [
                       `${value} unités vendues`,
                       props.payload.product_name
                     ]}
