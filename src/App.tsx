@@ -29,6 +29,7 @@ import CashRegisterPage from '@/pages/dashboard/CashRegisterPage';
 import CashHistoryPage from '@/pages/dashboard/CashHistoryPage';
 import CashRegistersManagementPage from '@/pages/dashboard/CashRegistersManagementPage';
 import PrescriptionsPage from '@/pages/dashboard/PrescriptionsPage';
+import CustomerDebtsPage from '@/pages/dashboard/CustomerDebtsPage';
 import SuperAdminPage from '@/pages/admin/SuperAdminPage';
 
 // Protected Route
@@ -143,6 +144,7 @@ function App() {
         <Route path="/cash/registers" element={<PharmacyRoute><CashRegistersManagementPage /></PharmacyRoute>} />
         <Route path="/users" element={<PharmacyRoute><UsersPage /></PharmacyRoute>} />
         <Route path="/prescriptions" element={<PharmacyRoute><PrescriptionsPage /></PharmacyRoute>} />
+        <Route path="/customers/debts" element={<PharmacyRoute><CustomerDebtsPage /></PharmacyRoute>} />
         <Route path="/settings" element={<PharmacyRoute><SettingsPage /></PharmacyRoute>} />
         
         {/* Route Super Admin (accessible uniquement aux super admins) */}

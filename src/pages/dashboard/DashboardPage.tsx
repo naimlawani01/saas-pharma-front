@@ -42,6 +42,7 @@ export default function DashboardPage() {
     queryClient.invalidateQueries({ queryKey: ['sales-by-period'] });
     queryClient.invalidateQueries({ queryKey: ['low-stock'] });
     queryClient.invalidateQueries({ queryKey: ['top-products'] });
+    queryClient.invalidateQueries({ queryKey: ['credits-summary'] });
     toast.success('Tableau de bord actualisé');
   };
 
@@ -68,6 +69,15 @@ export default function DashboardPage() {
     queryKey: ['top-products'],
     queryFn: async () => {
       const response = await api.get('/reports/top-products?limit=5');
+      return response.data;
+    },
+  });
+
+  // Résumé des crédits
+  const { data: creditSummary } = useQuery({
+    queryKey: ['credits-summary'],
+    queryFn: async () => {
+      const response = await api.get('/credits/summary');
       return response.data;
     },
   });
@@ -139,6 +149,53 @@ export default function DashboardPage() {
           iconColor="text-orange-600"
         />
       </div>
+
+      {/* Widgets Créances */}
+      {creditSummary && creditSummary.total_credit_balance > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="card bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-red-700 font-medium">Créances totales</p>
+                <p className="text-2xl font-bold text-red-900 mt-1">
+                  {formatCurrency(creditSummary.total_credit_balance)}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-red-200 rounded-full flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-red-700" />
+              </div>
+            </div>
+          </div>
+
+          <div className="card bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-orange-700 font-medium">Clients débiteurs</p>
+                <p className="text-2xl font-bold text-orange-900 mt-1">
+                  {creditSummary.total_customers_with_debt}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-orange-200 rounded-full flex items-center justify-center">
+                <Users className="w-6 h-6 text-orange-700" />
+              </div>
+            </div>
+          </div>
+
+          <div className="card bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-blue-700 font-medium">Plafond total</p>
+                <p className="text-2xl font-bold text-blue-900 mt-1">
+                  {creditSummary.total_credit_limit ? formatCurrency(creditSummary.total_credit_limit) : 'Illimité'}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-blue-200 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-blue-700" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Alertes */}
       {(dashboard?.inventory?.low_stock_count > 0 || dashboard?.inventory?.expiring_soon_count > 0) && (

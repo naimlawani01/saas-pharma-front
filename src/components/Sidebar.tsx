@@ -40,6 +40,7 @@ const pharmacyNavigation: NavItem[] = [
         { name: 'Catégories', href: '/products/categories', icon: Tag, requiresPharmacy: true },
   { name: 'Ventes', href: '/sales', icon: ShoppingCart, requiresPharmacy: true },
   { name: 'Clients', href: '/customers', icon: Users, requiresPharmacy: true },
+  { name: 'Dettes clients', href: '/customers/debts', icon: DollarSign, requiresPharmacy: true },
   { name: 'Prescriptions', href: '/prescriptions', icon: FileText, requiresPharmacy: true },
   { name: 'Fournisseurs', href: '/suppliers', icon: Truck, requiresPharmacy: true },
   { name: 'Mouvements Stock', href: '/stock/movements', icon: History, requiresPharmacy: true },

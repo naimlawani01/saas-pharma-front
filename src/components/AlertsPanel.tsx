@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { api } from '@/services/api';
+import { useAuthStore } from '@/stores/authStore';
 import { 
   Bell,
   X,
@@ -46,15 +47,24 @@ const ALERT_PRIORITY_DOT_COLORS: Record<AlertPriority, string> = {
 export default function AlertsPanel() {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
+  const { isAuthenticated, accessToken } = useAuthStore();
 
   // Récupérer les alertes non résolues
   const { data: alerts, refetch } = useQuery({
     queryKey: ['alerts'],
     queryFn: async () => {
-      const response = await api.get('/stock/alerts?is_resolved=false');
+      const response = await api.get('/stock/alerts?is_resolved=false&is_read=false');
       return response.data as Alert[];
     },
+    enabled: isAuthenticated && !!accessToken, // Ne faire la requête que si authentifié
     refetchInterval: 60000, // Rafraîchir toutes les minutes
+    retry: (failureCount, error: any) => {
+      // Ne pas retry si erreur 401 (non authentifié)
+      if (error?.response?.status === 401) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 
   // Marquer comme lu

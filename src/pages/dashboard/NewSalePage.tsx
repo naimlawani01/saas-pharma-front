@@ -23,6 +23,8 @@ import {
   WifiOff,
   FileText,
   AlertCircle,
+  Wallet,
+  Check,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
@@ -54,7 +56,16 @@ const paymentMethods = [
   { id: 'cash', name: 'Espèces', icon: Banknote },
   { id: 'card', name: 'Carte', icon: CreditCard },
   { id: 'mobile_money', name: 'Mobile Money', icon: Smartphone },
+  { id: 'check', name: 'Chèque', icon: Check },
+  { id: 'bank_transfer', name: 'Virement', icon: Wallet },
 ];
+
+interface PaymentBreakdown {
+  payment_method: 'cash' | 'card' | 'mobile_money' | 'check' | 'bank_transfer';
+  amount: number;
+  reference?: string;
+  notes?: string;
+}
 
 export default function NewSalePage() {
   const navigate = useNavigate();
@@ -63,7 +74,10 @@ export default function NewSalePage() {
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [discount, setDiscount] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [paymentMethod, setPaymentMethod] = useState('cash'); // Pour compatibilité
+  const [useMultiplePayments, setUseMultiplePayments] = useState(false); // Nouveau mode paiements multiples
+  const [paymentBreakdowns, setPaymentBreakdowns] = useState<PaymentBreakdown[]>([]);
+  const [creditAmount, setCreditAmount] = useState(0);
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [customerSearch, setCustomerSearch] = useState('');
@@ -191,7 +205,7 @@ export default function NewSalePage() {
   // Créer la vente
   const createSale = useMutation({
     mutationFn: async () => {
-      const saleData = {
+      const saleData: any = {
         pharmacy_id: user?.pharmacy_id,
         user_id: user?.id,
         customer_id: customerId,
@@ -199,7 +213,7 @@ export default function NewSalePage() {
         total_amount: subtotal,
         discount,
         tax: 0,
-        payment_method: paymentMethod,
+        payment_method: paymentMethod, // Pour compatibilité
         items: cart.map(item => ({
           product_id: item.product.id,
           quantity: item.quantity,
@@ -207,6 +221,33 @@ export default function NewSalePage() {
           discount: 0,
         })),
       };
+      
+      // Ajouter les paiements multiples et le crédit si activés
+      if (useMultiplePayments && paymentBreakdowns.length > 0) {
+        saleData.payment_breakdowns = paymentBreakdowns.map(p => ({
+          payment_method: p.payment_method,
+          amount: p.amount,
+          reference: p.reference || null,
+          notes: p.notes || null,
+        }));
+        saleData.credit_amount = creditAmount || 0;
+      } else if (creditAmount > 0) {
+        // Mode simple avec crédit
+        if (creditAmount < total) {
+          // Paiement partiel + crédit : créer un payment_breakdown pour le montant payé
+          saleData.payment_breakdowns = [{
+            payment_method: paymentMethod === 'credit' ? 'cash' : paymentMethod,
+            amount: total - creditAmount,
+            reference: null,
+            notes: null,
+          }];
+        } else {
+          // Tout en crédit, pas de payment_breakdowns
+          saleData.payment_breakdowns = [];
+        }
+        saleData.credit_amount = creditAmount;
+      }
+      
       return api.post('/sales', saleData);
     },
     onSuccess: (response) => {
@@ -273,6 +314,9 @@ export default function NewSalePage() {
           setDiscount(0);
           setCustomerId(null);
           setSelectedCustomer(null);
+          setPaymentBreakdowns([]);
+          setCreditAmount(0);
+          setUseMultiplePayments(false);
         }, 1000);
       } else {
         toast.error(error.response?.data?.detail || 'Erreur lors de la vente');
@@ -287,6 +331,9 @@ export default function NewSalePage() {
     setDiscount(0);
     setCustomerId(null);
     setSelectedCustomer(null);
+    setPaymentBreakdowns([]);
+    setCreditAmount(0);
+    setUseMultiplePayments(false);
     navigate('/sales');
   };
 
@@ -386,9 +433,46 @@ export default function NewSalePage() {
 
   const subtotal = cart.reduce((sum, item) => sum + item.product.selling_price * item.quantity, 0);
   const total = subtotal - discount;
+  
+  // Calculer les totaux pour les paiements multiples
+  const totalPaid = useMultiplePayments 
+    ? paymentBreakdowns.reduce((sum, p) => sum + p.amount, 0)
+    : (creditAmount > 0 ? total - creditAmount : total); // En mode simple, si crédit, montant payé = total - crédit
+  const remainingAmount = total - totalPaid - creditAmount;
+  const isValidPayment = Math.abs(remainingAmount) < 0.01; // Tolérance pour arrondis
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('fr-GN').format(value) + ' GNF';
+  };
+  
+  // Fonctions pour gérer les paiements multiples
+  const addPayment = () => {
+    setPaymentBreakdowns([...paymentBreakdowns, {
+      payment_method: 'cash',
+      amount: 0,
+      reference: '',
+      notes: '',
+    }]);
+  };
+  
+  const updatePayment = (index: number, field: keyof PaymentBreakdown, value: any) => {
+    const updated = [...paymentBreakdowns];
+    updated[index] = { ...updated[index], [field]: value };
+    setPaymentBreakdowns(updated);
+  };
+  
+  const removePayment = (index: number) => {
+    setPaymentBreakdowns(paymentBreakdowns.filter((_, i) => i !== index));
+  };
+  
+  // Calculer automatiquement le montant restant pour le dernier paiement ou le crédit
+  const calculateRemaining = () => {
+    const paid = paymentBreakdowns.reduce((sum, p) => sum + p.amount, 0);
+    const remaining = total - paid;
+    if (remaining > 0 && customerId) {
+      // Si un client est sélectionné, proposer de mettre en crédit
+      setCreditAmount(remaining);
+    }
   };
 
   const handleSubmit = () => {
@@ -401,6 +485,50 @@ export default function NewSalePage() {
     if (!isCashOpen) {
       toast.error('Vous devez ouvrir une caisse avant de pouvoir effectuer une vente');
       return;
+    }
+    
+    // Valider les paiements multiples si activés
+    if (useMultiplePayments) {
+      if (paymentBreakdowns.length === 0) {
+        toast.error('Ajoutez au moins un paiement');
+        return;
+      }
+      
+      // Vérifier que tous les paiements ont un montant
+      const invalidPayments = paymentBreakdowns.filter(p => !p.amount || p.amount <= 0);
+      if (invalidPayments.length > 0) {
+        toast.error('Tous les paiements doivent avoir un montant valide');
+        return;
+      }
+      
+      // Vérifier que la somme correspond
+      if (!isValidPayment) {
+        toast.error(`La somme des paiements (${formatCurrency(totalPaid)}) + crédit (${formatCurrency(creditAmount)}) doit égaler le total (${formatCurrency(total)})`);
+        return;
+      }
+      
+      // Si crédit > 0, vérifier qu'un client est sélectionné
+      if (creditAmount > 0 && !customerId) {
+        toast.error('Un client est requis pour les ventes à crédit');
+        return;
+      }
+    } else {
+      // Mode simple : vérifier le crédit
+      if (paymentMethod === 'credit' || creditAmount > 0) {
+        if (!customerId) {
+          toast.error('Un client est requis pour les ventes à crédit');
+          return;
+        }
+        // En mode simple avec crédit, créer automatiquement un payment_breakdown vide
+        // et mettre le montant en crédit
+        if (creditAmount === total) {
+          // Tout en crédit, pas de paiement
+        } else if (creditAmount > 0) {
+          // Paiement partiel + crédit
+          // Le montant payé = total - creditAmount
+          // On va créer un payment_breakdown pour le montant payé
+        }
+      }
     }
     
     createSale.mutate();
@@ -711,26 +839,232 @@ export default function NewSalePage() {
             )}
           </div>
 
-          {/* Payment method */}
+          {/* Payment method - Toggle entre mode simple et paiements multiples */}
           <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-4">Mode de paiement</h3>
-            <div className="grid grid-cols-3 gap-2">
-              {paymentMethods.map(method => (
-                <button
-                  key={method.id}
-                  onClick={() => setPaymentMethod(method.id)}
-                  className={clsx(
-                    'flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-colors',
-                    paymentMethod === method.id
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-gray-200 hover:border-gray-300'
-                  )}
-                >
-                  <method.icon className="w-6 h-6" />
-                  <span className="text-xs font-medium">{method.name}</span>
-                </button>
-              ))}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900">Mode de paiement</h3>
+              <button
+                onClick={() => {
+                  setUseMultiplePayments(!useMultiplePayments);
+                  if (!useMultiplePayments) {
+                    // Initialiser avec un paiement par défaut
+                    setPaymentBreakdowns([{
+                      payment_method: 'cash',
+                      amount: total,
+                      reference: '',
+                      notes: '',
+                    }]);
+                  } else {
+                    // Réinitialiser
+                    setPaymentBreakdowns([]);
+                    setCreditAmount(0);
+                  }
+                }}
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+              >
+                {useMultiplePayments ? 'Mode simple' : 'Paiements multiples'}
+              </button>
             </div>
+            
+            {!useMultiplePayments ? (
+              // Mode simple (ancien)
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-2">
+                  {paymentMethods.slice(0, 3).map(method => (
+                    <button
+                      key={method.id}
+                      onClick={() => {
+                        setPaymentMethod(method.id);
+                        if (method.id !== 'credit') {
+                          setCreditAmount(0);
+                        }
+                      }}
+                      className={clsx(
+                        'flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-colors',
+                        paymentMethod === method.id
+                          ? 'border-primary-500 bg-primary-50 text-primary-700'
+                          : 'border-gray-200 hover:border-gray-300'
+                      )}
+                    >
+                      <method.icon className="w-6 h-6" />
+                      <span className="text-xs font-medium">{method.name}</span>
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Option crédit en mode simple */}
+                {customerId ? (
+                  <div className="border-2 border-dashed rounded-lg p-4 space-y-3">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={paymentMethod === 'credit' || creditAmount > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setPaymentMethod('credit');
+                            setCreditAmount(total); // Mettre tout en crédit par défaut
+                          } else {
+                            setPaymentMethod('cash');
+                            setCreditAmount(0);
+                          }
+                        }}
+                        className="rounded w-5 h-5"
+                      />
+                      <div className="flex-1">
+                        <span className="font-medium text-gray-900 block">Vente à crédit</span>
+                        <span className="text-xs text-gray-500">Le client paiera plus tard</span>
+                      </div>
+                    </label>
+                    
+                    {paymentMethod === 'credit' && (
+                      <div className="ml-8 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-700">Montant en crédit:</span>
+                          <input
+                            type="number"
+                            value={creditAmount || total}
+                            onChange={(e) => {
+                              const amount = parseFloat(e.target.value) || 0;
+                              setCreditAmount(Math.min(amount, total));
+                            }}
+                            className="input text-sm flex-1 max-w-32"
+                            placeholder="0"
+                            min="0"
+                            max={total}
+                            step="0.01"
+                          />
+                          <span className="text-xs text-gray-500">sur {formatCurrency(total)}</span>
+                        </div>
+                        <p className="text-xs text-orange-600">
+                          💡 Le client devra {formatCurrency(creditAmount || total)} plus tard
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                    <p>⚠️ Sélectionnez un client pour activer la vente à crédit</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Mode paiements multiples
+              <div className="space-y-4">
+                {/* Liste des paiements */}
+                {paymentBreakdowns.map((payment, index) => (
+                  <div key={index} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">Paiement {index + 1}</span>
+                      {paymentBreakdowns.length > 1 && (
+                        <button
+                          onClick={() => removePayment(index)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        value={payment.payment_method}
+                        onChange={(e) => updatePayment(index, 'payment_method', e.target.value)}
+                        className="input text-sm"
+                      >
+                        {paymentMethods.map(method => (
+                          <option key={method.id} value={method.id}>{method.name}</option>
+                        ))}
+                      </select>
+                      
+                      <input
+                        type="number"
+                        value={payment.amount || ''}
+                        onChange={(e) => {
+                          const amount = parseFloat(e.target.value) || 0;
+                          updatePayment(index, 'amount', amount);
+                          // Recalculer le reste
+                          setTimeout(calculateRemaining, 100);
+                        }}
+                        placeholder="Montant"
+                        className="input text-sm"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                    
+                    {(payment.payment_method === 'mobile_money' || payment.payment_method === 'check' || payment.payment_method === 'bank_transfer') && (
+                      <input
+                        type="text"
+                        value={payment.reference || ''}
+                        onChange={(e) => updatePayment(index, 'reference', e.target.value)}
+                        placeholder="Référence (numéro de transaction, chèque...)"
+                        className="input text-sm"
+                      />
+                    )}
+                  </div>
+                ))}
+                
+                {/* Bouton pour ajouter un paiement */}
+                <button
+                  onClick={addPayment}
+                  className="w-full btn-secondary flex items-center justify-center gap-2 py-2 text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Ajouter un paiement
+                </button>
+                
+                {/* Résumé des paiements */}
+                <div className="bg-gray-50 rounded-lg p-3 space-y-1 text-sm">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Total payé:</span>
+                    <span className="font-medium">{formatCurrency(totalPaid)}</span>
+                  </div>
+                  {creditAmount > 0 && (
+                    <div className="flex justify-between text-orange-600">
+                      <span>En crédit:</span>
+                      <span className="font-medium">{formatCurrency(creditAmount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-gray-900 font-semibold pt-2 border-t">
+                    <span>Reste à payer:</span>
+                    <span className={clsx(
+                      remainingAmount > 0.01 ? 'text-red-600' : 'text-green-600'
+                    )}>
+                      {formatCurrency(Math.max(0, remainingAmount))}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Option crédit si client sélectionné */}
+                {customerId && remainingAmount > 0.01 && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={creditAmount > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setCreditAmount(remainingAmount);
+                          } else {
+                            setCreditAmount(0);
+                          }
+                        }}
+                        className="rounded"
+                      />
+                      <span className="text-sm font-medium text-orange-800">
+                        Mettre le reste ({formatCurrency(remainingAmount)}) en crédit
+                      </span>
+                    </label>
+                  </div>
+                )}
+                
+                {!customerId && remainingAmount > 0.01 && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                    <p>⚠️ Sélectionnez un client pour mettre le reste en crédit</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Discount */}
@@ -763,6 +1097,27 @@ export default function NewSalePage() {
                 <span>Total</span>
                 <span>{formatCurrency(total)}</span>
               </div>
+              
+              {/* Afficher le crédit même en mode simple */}
+              {!useMultiplePayments && creditAmount > 0 && (
+                <div className="border-t border-primary-200 pt-3 space-y-2">
+                  {creditAmount < total && (
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Montant payé maintenant</span>
+                      <span className="font-medium">{formatCurrency(total - creditAmount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm text-orange-600">
+                    <span>Montant en crédit</span>
+                    <span className="font-medium">{formatCurrency(creditAmount)}</span>
+                  </div>
+                  {creditAmount === total && (
+                    <div className="flex justify-between text-sm font-semibold text-orange-600">
+                      <span>⚠️ Vente entièrement à crédit</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
             <div className="flex gap-2 mt-4">
