@@ -13,6 +13,7 @@ import {
   Trash2,
   Package,
   ShoppingCart,
+  ExternalLink,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -28,6 +29,7 @@ interface Supplier {
   phone: string | null;
   email: string | null;
   address: string | null;
+  order_url: string | null;
   is_active: boolean;
   created_at: string;
 }
@@ -200,17 +202,42 @@ export default function SuppliersPage() {
                     <span className="truncate">{supplier.address}</span>
                   </div>
                 )}
+                {supplier.order_url && (
+                  <div className="flex items-center gap-2 text-blue-600">
+                    <ExternalLink className="w-4 h-4" />
+                    <a
+                      href={supplier.order_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium hover:underline truncate"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Lien de commande
+                    </a>
+                  </div>
+                )}
               </div>
               
               <div className="mt-4 pt-4 border-t border-gray-100">
-                <button
-                  onClick={() => navigate(`/suppliers/orders?supplier_id=${supplier.id}&action=create`)}
-                  className="w-full btn-primary flex items-center justify-center gap-2 mb-2"
-                  title="Créer une commande pour ce fournisseur"
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  Commander
-                </button>
+                <div className="flex gap-2 mb-2">
+                  <button
+                    onClick={() => navigate(`/suppliers/orders?supplier_id=${supplier.id}&action=create`)}
+                    className="flex-1 btn-primary flex items-center justify-center gap-2"
+                    title="Créer une commande pour ce fournisseur"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    Commander
+                  </button>
+                  {supplier.order_url && (
+                    <button
+                      onClick={() => window.open(supplier.order_url || '', '_blank', 'noopener,noreferrer')}
+                      className="btn-secondary flex items-center justify-center gap-2 px-3"
+                      title="Ouvrir le lien de commande"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-gray-400">
                     Ajouté le {new Date(supplier.created_at).toLocaleDateString('fr-FR')}

@@ -4,6 +4,7 @@ import { api } from '@/services/api';
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
+import { useAuthStore } from '@/stores/authStore';
 
 interface CustomerFormData {
   first_name: string;
@@ -12,10 +13,8 @@ interface CustomerFormData {
   email: string;
   address: string;
   city: string;
-  country: string;
   date_of_birth: string | null;
-  gender: string;
-  medical_history: string;
+  medical_notes: string;
   allergies: string;
   is_active: boolean;
 }
@@ -33,16 +32,15 @@ const initialFormData: CustomerFormData = {
   email: '',
   address: '',
   city: 'Conakry',
-  country: 'Guinée',
   date_of_birth: '',
-  gender: '',
-  medical_history: '',
+  medical_notes: '',
   allergies: '',
   is_active: true,
 };
 
 export default function CustomerFormModal({ isOpen, onClose, customer }: CustomerFormModalProps) {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   const isEditing = !!customer;
   
   const [formData, setFormData] = useState<CustomerFormData>(initialFormData);
@@ -56,10 +54,8 @@ export default function CustomerFormModal({ isOpen, onClose, customer }: Custome
         email: customer.email || '',
         address: customer.address || '',
         city: customer.city || 'Conakry',
-        country: customer.country || 'Guinée',
         date_of_birth: customer.date_of_birth ? customer.date_of_birth.split('T')[0] : '',
-        gender: customer.gender || '',
-        medical_history: customer.medical_history || '',
+        medical_notes: customer.medical_notes || '',
         allergies: customer.allergies || '',
         is_active: customer.is_active ?? true,
       });
@@ -104,15 +100,37 @@ export default function CustomerFormModal({ isOpen, onClose, customer }: Custome
       return;
     }
 
-    const dataToSend = {
-      ...formData,
-      date_of_birth: formData.date_of_birth || null,
+    if (!user?.pharmacy_id) {
+      toast.error('Erreur : aucune pharmacie associée à votre compte');
+      return;
+    }
+
+    // Préparer les données pour l'API
+    const dataToSend: any = {
+      first_name: formData.first_name.trim(),
+      last_name: formData.last_name.trim(),
+      phone: formData.phone.trim() || null,
+      email: formData.email.trim() || null,
+      address: formData.address.trim() || null,
+      city: formData.city.trim() || null,
+      date_of_birth: formData.date_of_birth ? new Date(formData.date_of_birth).toISOString() : null,
+      medical_notes: formData.medical_notes.trim() || null,
+      allergies: formData.allergies.trim() || null,
     };
 
     if (isEditing) {
-      updateMutation.mutate(dataToSend);
+      // Pour la mise à jour, ajouter is_active si nécessaire
+      const updateData: any = { ...dataToSend };
+      if (formData.is_active !== undefined) {
+        updateData.is_active = formData.is_active;
+      }
+      updateMutation.mutate(updateData);
     } else {
-      createMutation.mutate(dataToSend);
+      // Pour la création, ajouter pharmacy_id
+      createMutation.mutate({
+        ...dataToSend,
+        pharmacy_id: user.pharmacy_id,
+      });
     }
   };
 
@@ -188,20 +206,6 @@ export default function CustomerFormModal({ isOpen, onClose, customer }: Custome
             />
           </div>
 
-          {/* Genre */}
-          <div>
-            <label className="label">Genre</label>
-            <select
-              value={formData.gender}
-              onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-              className="input"
-            >
-              <option value="">-- Sélectionner --</option>
-              <option value="Male">Homme</option>
-              <option value="Female">Femme</option>
-            </select>
-          </div>
-
           {/* Adresse */}
           <div className="md:col-span-2">
             <label className="label">Adresse</label>
@@ -226,18 +230,6 @@ export default function CustomerFormModal({ isOpen, onClose, customer }: Custome
             />
           </div>
 
-          {/* Pays */}
-          <div>
-            <label className="label">Pays</label>
-            <input
-              type="text"
-              value={formData.country}
-              onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-              className="input"
-              placeholder="Guinée"
-            />
-          </div>
-
           {/* Allergies */}
           <div className="md:col-span-2">
             <label className="label">Allergies connues</label>
@@ -254,8 +246,8 @@ export default function CustomerFormModal({ isOpen, onClose, customer }: Custome
           <div className="md:col-span-2">
             <label className="label">Notes médicales</label>
             <textarea
-              value={formData.medical_history}
-              onChange={(e) => setFormData({ ...formData, medical_history: e.target.value })}
+              value={formData.medical_notes}
+              onChange={(e) => setFormData({ ...formData, medical_notes: e.target.value })}
               className="input min-h-[80px]"
               placeholder="Informations médicales importantes..."
             />

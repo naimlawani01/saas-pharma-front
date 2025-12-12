@@ -4,6 +4,7 @@ import { api } from '@/services/api';
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
+import { useAuthStore } from '@/stores/authStore';
 
 interface SupplierFormData {
   name: string;
@@ -13,7 +14,7 @@ interface SupplierFormData {
   address: string;
   city: string;
   country: string;
-  notes: string;
+  order_url: string;
   is_active: boolean;
 }
 
@@ -31,12 +32,13 @@ const initialFormData: SupplierFormData = {
   address: '',
   city: 'Conakry',
   country: 'Guinée',
-  notes: '',
+  order_url: '',
   is_active: true,
 };
 
 export default function SupplierFormModal({ isOpen, onClose, supplier }: SupplierFormModalProps) {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   const isEditing = !!supplier;
   
   const [formData, setFormData] = useState<SupplierFormData>(initialFormData);
@@ -51,7 +53,7 @@ export default function SupplierFormModal({ isOpen, onClose, supplier }: Supplie
         address: supplier.address || '',
         city: supplier.city || 'Conakry',
         country: supplier.country || 'Guinée',
-        notes: supplier.notes || '',
+        order_url: supplier.order_url || '',
         is_active: supplier.is_active ?? true,
       });
     } else if (isOpen) {
@@ -95,10 +97,38 @@ export default function SupplierFormModal({ isOpen, onClose, supplier }: Supplie
       return;
     }
 
+    if (!user?.pharmacy_id) {
+      toast.error('Erreur : aucune pharmacie associée à votre compte');
+      return;
+    }
+
+    // Préparer les données pour l'API
+    const dataToSend: any = {
+      name: formData.name.trim(),
+      contact_person: formData.contact_person.trim() || null,
+      phone: formData.phone.trim() || null,
+      email: formData.email.trim() || null,
+      address: formData.address.trim() || null,
+      city: formData.city.trim() || null,
+      country: formData.country.trim() || null,
+      order_url: formData.order_url.trim() || null,
+      tax_id: null,
+      payment_terms: null,
+    };
+
     if (isEditing) {
-      updateMutation.mutate(formData);
+      // Pour la mise à jour, ajouter is_active si nécessaire
+      const updateData: any = { ...dataToSend };
+      if (formData.is_active !== undefined) {
+        updateData.is_active = formData.is_active;
+      }
+      updateMutation.mutate(updateData);
     } else {
-      createMutation.mutate(formData);
+      // Pour la création, ajouter pharmacy_id
+      createMutation.mutate({
+        ...dataToSend,
+        pharmacy_id: user.pharmacy_id,
+      });
     }
   };
 
@@ -198,15 +228,19 @@ export default function SupplierFormModal({ isOpen, onClose, supplier }: Supplie
             />
           </div>
 
-          {/* Notes */}
+          {/* Lien pour commander */}
           <div className="md:col-span-2">
-            <label className="label">Notes</label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="input min-h-[80px]"
-              placeholder="Informations supplémentaires..."
+            <label className="label">Lien pour passer commande</label>
+            <input
+              type="url"
+              value={formData.order_url}
+              onChange={(e) => setFormData({ ...formData, order_url: e.target.value })}
+              className="input"
+              placeholder="https://exemple.com/commande"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              URL du site web ou de la plateforme de commande du fournisseur
+            </p>
           </div>
 
           {/* Actif */}
