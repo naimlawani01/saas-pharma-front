@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
+import { useAuthStore } from '@/stores/authStore';
 import { 
   TrendingUp, 
   Package, 
@@ -27,6 +28,7 @@ import {
 
 export default function DashboardPage() {
   const queryClient = useQueryClient();
+  const { isAuthenticated, accessToken } = useAuthStore();
 
   // Récupérer les stats du dashboard
   const { data: dashboard, isLoading, isFetching } = useQuery({
@@ -34,6 +36,11 @@ export default function DashboardPage() {
     queryFn: async () => {
       const response = await api.get('/reports/dashboard');
       return response.data;
+    },
+    enabled: isAuthenticated && !!accessToken,
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401) return false;
+      return failureCount < 2;
     },
   });
 
@@ -53,6 +60,11 @@ export default function DashboardPage() {
       const response = await api.get('/reports/sales-by-period?group_by=day');
       return response.data;
     },
+    enabled: isAuthenticated && !!accessToken,
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401) return false;
+      return failureCount < 2;
+    },
   });
 
   // Produits en stock critique
@@ -61,6 +73,11 @@ export default function DashboardPage() {
     queryFn: async () => {
       const response = await api.get('/reports/low-stock');
       return response.data;
+    },
+    enabled: isAuthenticated && !!accessToken,
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401) return false;
+      return failureCount < 2;
     },
   });
 
@@ -71,6 +88,11 @@ export default function DashboardPage() {
       const response = await api.get('/reports/top-products?limit=5');
       return response.data;
     },
+    enabled: isAuthenticated && !!accessToken,
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401) return false;
+      return failureCount < 2;
+    },
   });
 
   // Résumé des crédits
@@ -79,6 +101,11 @@ export default function DashboardPage() {
     queryFn: async () => {
       const response = await api.get('/credits/summary');
       return response.data;
+    },
+    enabled: isAuthenticated && !!accessToken,
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401) return false;
+      return failureCount < 2;
     },
   });
 

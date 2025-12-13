@@ -28,7 +28,7 @@ export default function AuthLayout() {
           </div>
           
           <h2 className="text-4xl font-display font-bold mb-4">
-            Gérez votre pharmacie en toute simplicité
+            Gérez votre  en toute simplicité
           </h2>
           
           <p className="text-primary-100 text-lg mb-8">

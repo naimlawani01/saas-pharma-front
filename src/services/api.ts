@@ -94,6 +94,28 @@ api.interceptors.response.use(
       }
     }
     
+    // Ne pas logger les erreurs 401 dans la console (elles sont normales si l'utilisateur n'est pas authentifié)
+    // Les queries avec `enabled: isAuthenticated` ne devraient pas être exécutées, mais on supprime quand même les logs
+    if (error.response?.status === 401) {
+      // Vérifier si l'utilisateur est authentifié avant de logger
+      const { isAuthenticated } = useAuthStore.getState();
+      if (!isAuthenticated) {
+        // Si l'utilisateur n'est pas authentifié, c'est normal, ne pas logger
+        // Créer une erreur silencieuse qui ne sera pas loggée par Axios
+        const silentError = Object.create(Error.prototype);
+        Object.assign(silentError, {
+          message: error.message,
+          response: error.response,
+          config: error.config,
+          isAxiosError: true,
+          toJSON: error.toJSON,
+          // Empêcher le logging en définissant toString
+          toString: () => '',
+        });
+        return Promise.reject(silentError);
+      }
+    }
+    
     // Si erreur réseau (pas de réponse), sauvegarder pour sync offline
     if (!error.response && originalRequest && navigator.onLine === false) {
       const { syncService } = await import('./syncService');

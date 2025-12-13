@@ -18,6 +18,11 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.cjs'),
+      // Content Security Policy pour la sécurité
+      // En dev, on permet 'unsafe-eval' pour Vite HMR, mais on restreint les autres sources
+      contentSecurityPolicy: isDev
+        ? "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* ws://localhost:* data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:*; style-src 'self' 'unsafe-inline';"
+        : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';",
     },
     icon: path.join(__dirname, '../public/favicon.svg'),
     titleBarStyle: 'default',

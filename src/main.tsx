@@ -43,12 +43,38 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 );
 
 // Enregistrer le service worker pour le cache offline
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js').catch((err) => {
-      console.error('ServiceWorker registration failed: ', err);
+// Seulement dans le navigateur, pas dans Electron
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator && !window.electron) {
+  // Attendre que le document soit complètement prêt
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      registerServiceWorker();
     });
-  });
+  } else if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    // Le document est déjà prêt, enregistrer immédiatement
+    registerServiceWorker();
+  } else {
+    // Fallback: attendre le load event
+    window.addEventListener('load', registerServiceWorker);
+  }
+}
+
+function registerServiceWorker() {
+  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+    navigator.serviceWorker
+      .register('/service-worker.js')
+      .then((registration) => {
+        console.log('ServiceWorker registered successfully:', registration.scope);
+      })
+      .catch((err) => {
+        // Ne pas logger comme erreur si c'est juste que le document n'est pas prêt
+        if (err.message?.includes('invalid state') || err.name === 'InvalidStateError') {
+          console.log('ServiceWorker registration skipped (invalid state)');
+        } else {
+          console.warn('ServiceWorker registration failed:', err.message || err);
+        }
+      });
+  }
 }
 
 // Initialiser la synchronisation dès le chargement
