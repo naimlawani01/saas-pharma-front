@@ -27,7 +27,7 @@ export const useAppStore = create<AppState>()(
       sidebarOpen: true,
       sidebarCollapsed: false,
       theme: 'light',
-      isOnline: navigator.onLine,
+      isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
       pendingSyncCount: 0,
 
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
@@ -45,15 +45,4 @@ export const useAppStore = create<AppState>()(
     }
   )
 );
-
-// Écouter les changements de connexion
-if (typeof window !== 'undefined') {
-  window.addEventListener('online', () => {
-    useAppStore.getState().setOnlineStatus(true);
-  });
-  
-  window.addEventListener('offline', () => {
-    useAppStore.getState().setOnlineStatus(false);
-  });
-}
 

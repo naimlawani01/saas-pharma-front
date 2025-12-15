@@ -109,11 +109,36 @@ function OnlineRefresher() {
   return null;
 }
 
-function App() {
-  OnlineRefresher();
+function OnlineStatusListener() {
+  const setOnlineStatus = useAppStore((state) => state.setOnlineStatus);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleOnline = () => setOnlineStatus(true);
+    const handleOffline = () => setOnlineStatus(false);
+
+    // Init avec l'état courant du navigateur
+    setOnlineStatus(navigator.onLine);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [setOnlineStatus]);
+
+  return null;
+}
+
+function App() {
   return (
-    <Routes>
+    <>
+      <OnlineStatusListener />
+      <OnlineRefresher />
+      <Routes>
       {/* Auth Routes */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
@@ -154,6 +179,7 @@ function App() {
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }
 
