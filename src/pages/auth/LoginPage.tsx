@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { checkBackendConnection, api } from '@/services/api';
 
@@ -15,6 +15,7 @@ export default function LoginPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [backendStatus, setBackendStatus] = useState<{ accessible: boolean; error?: string } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   // Vérifier la connexion au backend au chargement
   useEffect(() => {
@@ -35,9 +36,10 @@ export default function LoginPage() {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null); // Réinitialiser l'erreur
     
     if (!formData.identifier || !formData.password) {
-      toast.error('Veuillez remplir tous les champs');
+      setErrorMessage('Veuillez remplir tous les champs');
       return;
     }
     
@@ -86,7 +88,15 @@ export default function LoginPage() {
         message = error.response.data?.detail || `Erreur: ${error.response.status} ${error.response.statusText}`;
       }
       
-      toast.error(message);
+      setErrorMessage(message);
+    }
+  };
+  
+  // Effacer l'erreur quand l'utilisateur commence à taper
+  const handleInputChange = (field: 'identifier' | 'password', value: string) => {
+    setFormData({ ...formData, [field]: value });
+    if (errorMessage) {
+      setErrorMessage(null);
     }
   };
   
@@ -120,13 +130,27 @@ export default function LoginPage() {
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Message d'erreur professionnel */}
+        {errorMessage && (
+          <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-sm text-red-700 font-medium">{errorMessage}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div>
           <label className="label">Email ou nom d'utilisateur</label>
           <input
             type="text"
             value={formData.identifier}
-            onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
-            className="input"
+            onChange={(e) => handleInputChange('identifier', e.target.value)}
+            className={`input ${errorMessage ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
             placeholder="admin@exemple.com ou admin"
             autoComplete="username"
             disabled={isLoading}
@@ -139,8 +163,8 @@ export default function LoginPage() {
             <input
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="input pr-11"
+              onChange={(e) => handleInputChange('password', e.target.value)}
+              className={`input pr-11 ${errorMessage ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
               placeholder="••••••••"
               autoComplete="current-password"
               disabled={isLoading}
