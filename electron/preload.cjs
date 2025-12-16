@@ -5,8 +5,18 @@ contextBridge.exposeInMainWorld('electron', true);
 
 // Exposer des APIs sécurisées au renderer
 contextBridge.exposeInMainWorld('electronAPI', {
+  // Infos sur l'app
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   getPlatform: () => ipcRenderer.invoke('get-platform'),
-  // Ajouter d'autres méthodes si nécessaire
+  
+  // Gestion du backend local
+  getBackendStatus: () => ipcRenderer.invoke('get-backend-status'),
+  restartBackend: () => ipcRenderer.invoke('restart-backend'),
+  
+  // Event listeners pour le statut du backend
+  onBackendStatusChange: (callback) => {
+    const handler = (_event, status) => callback(status);
+    ipcRenderer.on('backend-status-change', handler);
+    return () => ipcRenderer.removeListener('backend-status-change', handler);
+  },
 });
-

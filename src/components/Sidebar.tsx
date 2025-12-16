@@ -19,6 +19,7 @@ import {
   DollarSign,
   FileText,
   Tag,
+  Cloud,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -47,7 +48,7 @@ const pharmacyNavigation: NavItem[] = [
   { name: 'Ajustements', href: '/stock/adjustments', icon: Edit3, requiresPharmacy: true },
   { name: 'Rapports', href: '/reports', icon: BarChart3, requiresPharmacy: true },
   { name: 'Utilisateurs', href: '/users', icon: UserCog, adminOnly: true, requiresPharmacy: true },
-  // Paramètres retiré - accessible via le menu utilisateur en haut à droite
+  { name: 'Sync Cloud', href: '/settings/sync', icon: Cloud, adminOnly: true, requiresPharmacy: true },
 ];
 
 // Navigation pour le super admin (gestion globale)

@@ -1,19 +1,33 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/stores/authStore';
 
-// Récupérer l'URL de l'API depuis les variables d'environnement
-let API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+// Détecter si on est dans Electron
+const isElectron = typeof window !== 'undefined' && window.electron === true;
 
-// En production, forcer HTTPS si l'URL est en HTTP
-// Cela évite les problèmes de Mixed Content et les redirections 307
-if (import.meta.env.PROD && API_URL.startsWith('http://')) {
-  console.warn('[API Config] URL HTTP détectée en production, conversion automatique en HTTPS');
-  API_URL = API_URL.replace('http://', 'https://');
+// Récupérer l'URL de l'API
+// En mode Electron, toujours utiliser localhost:8000 (backend local)
+// En mode web, utiliser la variable d'environnement
+let API_URL: string;
+
+if (isElectron) {
+  // Mode Electron : backend local
+  API_URL = 'http://localhost:8000/api/v1';
+  console.log('[API Config] Mode Electron détecté - Backend local');
+} else {
+  // Mode web : utiliser la config
+  API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+  
+  // En production web, forcer HTTPS si l'URL est en HTTP
+  if (import.meta.env.PROD && API_URL.startsWith('http://') && !API_URL.includes('localhost')) {
+    console.warn('[API Config] URL HTTP détectée en production, conversion automatique en HTTPS');
+    API_URL = API_URL.replace('http://', 'https://');
+  }
 }
 
 // Log pour déboguer (uniquement en développement)
-if (import.meta.env.DEV) {
+if (import.meta.env.DEV || isElectron) {
   console.log('[API Config] API_URL:', API_URL);
+  console.log('[API Config] isElectron:', isElectron);
 }
 
 export const api = axios.create({
@@ -23,6 +37,22 @@ export const api = axios.create({
   },
   timeout: 30000,
 });
+
+// Fonction utilitaire pour vérifier le statut du backend (Electron uniquement)
+export async function checkBackendStatus(): Promise<{ running: boolean; url: string; port: number } | null> {
+  if (!isElectron || !window.electronAPI?.getBackendStatus) {
+    return null;
+  }
+  return window.electronAPI.getBackendStatus();
+}
+
+// Fonction pour redémarrer le backend (Electron uniquement)
+export async function restartBackend(): Promise<{ success: boolean; error?: string } | null> {
+  if (!isElectron || !window.electronAPI?.restartBackend) {
+    return null;
+  }
+  return window.electronAPI.restartBackend();
+}
 
 // Intercepteur pour ajouter le token et gérer le mode offline
 api.interceptors.request.use(
@@ -95,13 +125,10 @@ api.interceptors.response.use(
     }
     
     // Ne pas logger les erreurs 401 dans la console (elles sont normales si l'utilisateur n'est pas authentifié)
-    // Les queries avec `enabled: isAuthenticated` ne devraient pas être exécutées, mais on supprime quand même les logs
     if (error.response?.status === 401) {
-      // Vérifier si l'utilisateur est authentifié avant de logger
       const { isAuthenticated } = useAuthStore.getState();
       if (!isAuthenticated) {
         // Si l'utilisateur n'est pas authentifié, c'est normal, ne pas logger
-        // Créer une erreur silencieuse qui ne sera pas loggée par Axios
         const silentError = Object.create(Error.prototype);
         Object.assign(silentError, {
           message: error.message,
@@ -109,7 +136,6 @@ api.interceptors.response.use(
           config: error.config,
           isAxiosError: true,
           toJSON: error.toJSON,
-          // Empêcher le logging en définissant toString
           toString: () => '',
         });
         return Promise.reject(silentError);
@@ -120,7 +146,6 @@ api.interceptors.response.use(
     if (!error.response && originalRequest && navigator.onLine === false) {
       const { syncService } = await import('./syncService');
       
-      // Déterminer le type d'entité et l'endpoint
       const url = originalRequest.url || '';
       const method = (originalRequest.method || 'GET').toUpperCase();
       
@@ -133,7 +158,6 @@ api.interceptors.response.use(
         else if (url.includes('/customers')) entity = 'customer';
         else if (url.includes('/suppliers')) entity = 'supplier';
         else if (url.includes('/orders')) entity = 'order';
-        // Les sessions de caisse sont traitées comme des ventes pour la sync
         else if (url.includes('/cash')) entity = 'sale';
         await syncService.savePendingOperation(
           type,
@@ -160,4 +184,3 @@ export interface PaginatedResponse<T> {
   page: number;
   limit: number;
 }
-

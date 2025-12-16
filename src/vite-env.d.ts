@@ -8,18 +8,33 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
+interface BackendStatus {
+  running: boolean;
+  url: string;
+  port: number;
+}
+
+interface RestartBackendResult {
+  success: boolean;
+  error?: string;
+}
+
 interface Window {
-  electron?: boolean | {
-    // Indicateur que l'application tourne dans Electron
-    [key: string]: any;
-  };
+  electron?: boolean;
   electronAPI?: {
+    // Infos sur l'app
     getAppVersion: () => Promise<string>;
     getPlatform: () => Promise<string>;
+    
+    // Gestion du backend local
+    getBackendStatus: () => Promise<BackendStatus>;
+    restartBackend: () => Promise<RestartBackendResult>;
+    
+    // Event listeners
+    onBackendStatusChange: (callback: (status: BackendStatus) => void) => () => void;
   };
   electronDB?: {
     // Base de données SQLite via IPC
     [key: string]: any;
   };
 }
-
