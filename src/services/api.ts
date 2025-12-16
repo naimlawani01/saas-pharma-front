@@ -59,7 +59,7 @@ export async function restartBackend(): Promise<{ success: boolean; error?: stri
 export async function checkBackendConnection(): Promise<{ accessible: boolean; error?: string }> {
   try {
     // Essayer de faire une requête simple (health check ou endpoint public)
-    const response = await api.get('/setup/status', { timeout: 5000 });
+    await api.get('/setup/status', { timeout: 5000 });
     return { accessible: true };
   } catch (error: any) {
     if (!error.response) {
