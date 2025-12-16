@@ -39,6 +39,7 @@ export const useAuthStore = create<AuthState>()(
       login: async (credentials) => {
         set({ isLoading: true });
         try {
+          console.log('[Auth] Tentative de connexion à:', api.defaults.baseURL);
           const response = await api.post('/auth/login', credentials);
           const { access_token, refresh_token } = response.data;
           
@@ -53,8 +54,16 @@ export const useAuthStore = create<AuthState>()(
           const userResponse = await api.get('/auth/me');
           const user = userResponse.data;
           set({ user });
+          console.log('[Auth] Connexion réussie pour:', user.email);
           return user; // Retourner l'utilisateur pour la redirection
-        } catch (error) {
+        } catch (error: any) {
+          console.error('[Auth] Erreur de connexion:', {
+            message: error.message,
+            code: error.code,
+            response: error.response?.status,
+            baseURL: api.defaults.baseURL,
+            url: error.config?.url,
+          });
           set({ isAuthenticated: false, user: null });
           throw error;
         } finally {

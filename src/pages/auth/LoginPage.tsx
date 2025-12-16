@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { checkBackendConnection, api } from '@/services/api';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -13,6 +14,24 @@ export default function LoginPage() {
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [backendStatus, setBackendStatus] = useState<{ accessible: boolean; error?: string } | null>(null);
+  
+  // Vérifier la connexion au backend au chargement
+  useEffect(() => {
+    const verifyBackend = async () => {
+      try {
+        const status = await checkBackendConnection();
+        setBackendStatus(status);
+        if (!status.accessible && status.error) {
+          console.warn('[Login] Backend non accessible:', status.error);
+        }
+      } catch (error) {
+        console.error('[Login] Erreur lors de la vérification du backend:', error);
+      }
+    };
+    
+    verifyBackend();
+  }, []);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +58,34 @@ export default function LoginPage() {
         navigate('/', { replace: true });
       }
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erreur de connexion';
+      console.error('Erreur de connexion:', error);
+      
+      // Gérer différents types d'erreurs
+      let message = 'Erreur de connexion';
+      
+      if (!error.response) {
+        // Erreur réseau (pas de réponse du serveur)
+        if (error.code === 'ECONNREFUSED' || error.message?.includes('Network Error')) {
+          message = 'Impossible de se connecter au serveur. Vérifiez que le backend est démarré et que l\'URL est correcte.';
+        } else if (error.message?.includes('timeout')) {
+          message = 'Le serveur met trop de temps à répondre. Vérifiez votre connexion.';
+        } else {
+          message = 'Erreur de connexion réseau. Vérifiez votre connexion internet et que le serveur est accessible.';
+        }
+      } else if (error.response.status === 401) {
+        // Erreur d'authentification
+        message = error.response.data?.detail || 'Email/utilisateur ou mot de passe incorrect';
+      } else if (error.response.status === 403) {
+        // Compte désactivé
+        message = error.response.data?.detail || 'Votre compte a été désactivé';
+      } else if (error.response.status >= 500) {
+        // Erreur serveur
+        message = 'Erreur serveur. Veuillez réessayer plus tard.';
+      } else {
+        // Autre erreur
+        message = error.response.data?.detail || `Erreur: ${error.response.status} ${error.response.statusText}`;
+      }
+      
       toast.error(message);
     }
   };
@@ -61,6 +107,16 @@ export default function LoginPage() {
       <div className="text-center mb-8">
         <h2 className="text-2xl font-display font-bold text-gray-900">Connexion</h2>
         <p className="text-gray-500 mt-2">Accédez à votre espace de gestion</p>
+        {backendStatus && !backendStatus.accessible && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-700">
+              <strong>⚠️ Problème de connexion:</strong> {backendStatus.error}
+            </p>
+            <p className="text-xs text-red-600 mt-1">
+              URL du backend: {api.defaults.baseURL}
+            </p>
+          </div>
+        )}
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-5">

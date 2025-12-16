@@ -28,6 +28,7 @@ if (isElectron) {
 if (import.meta.env.DEV || isElectron) {
   console.log('[API Config] API_URL:', API_URL);
   console.log('[API Config] isElectron:', isElectron);
+  console.log('[API Config] navigator.onLine:', navigator.onLine);
 }
 
 export const api = axios.create({
@@ -52,6 +53,29 @@ export async function restartBackend(): Promise<{ success: boolean; error?: stri
     return null;
   }
   return window.electronAPI.restartBackend();
+}
+
+// Fonction pour vérifier si le backend est accessible
+export async function checkBackendConnection(): Promise<{ accessible: boolean; error?: string }> {
+  try {
+    // Essayer de faire une requête simple (health check ou endpoint public)
+    const response = await api.get('/setup/status', { timeout: 5000 });
+    return { accessible: true };
+  } catch (error: any) {
+    if (!error.response) {
+      // Pas de réponse = backend inaccessible
+      return {
+        accessible: false,
+        error: error.code === 'ECONNREFUSED' 
+          ? 'Le backend n\'est pas accessible. Vérifiez qu\'il est démarré.'
+          : error.message?.includes('timeout')
+          ? 'Le backend met trop de temps à répondre.'
+          : 'Impossible de se connecter au backend.',
+      };
+    }
+    // Si on a une réponse (même une erreur), le backend est accessible
+    return { accessible: true };
+  }
 }
 
 // Intercepteur pour ajouter le token et gérer le mode offline
