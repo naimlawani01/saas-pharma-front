@@ -1,6 +1,6 @@
 {
   "name": "pharmacie-manager",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "Application de gestion de pharmacie - Desktop avec backend intégré",
   "main": "electron/main.cjs",
@@ -64,7 +64,10 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "identity": null
@@ -73,7 +76,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "build/icon.ico"
