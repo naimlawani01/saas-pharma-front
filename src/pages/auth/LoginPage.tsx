@@ -209,15 +209,17 @@ export default function LoginPage() {
         </button>
       </form>
       
-      {/* Demo credentials */}
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-        <p className="text-xs text-gray-500 text-center mb-2">Comptes de démonstration :</p>
-        <div className="text-center text-sm space-y-1">
-          <p className="text-purple-700"><strong>Super Admin :</strong> superadmin / superadmin123</p>
-          <p className="text-gray-700"><strong>Admin Pharmacie :</strong> admin / admin123</p>
-          <p className="text-gray-700"><strong>Pharmacien :</strong> pharmacien / pharma123</p>
+      {/* Demo credentials - Affiché uniquement en développement */}
+      {import.meta.env.DEV && (
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <p className="text-xs text-gray-500 text-center mb-2">Comptes de démonstration :</p>
+          <div className="text-center text-sm space-y-1">
+            <p className="text-purple-700"><strong>Super Admin :</strong> superadmin / superadmin123</p>
+            <p className="text-gray-700"><strong>Admin Pharmacie :</strong> admin / admin123</p>
+            <p className="text-gray-700"><strong>Pharmacien :</strong> pharmacien / pharma123</p>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
