@@ -1,6 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
+import { isFeatureEnabled, getBusinessConfig } from '@/config/businessConfig';
+import { appConfig } from '@/config/appConfig';
 import {
   LayoutDashboard,
   Package,
@@ -20,6 +22,7 @@ import {
   FileText,
   Tag,
   Cloud,
+  Store,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -29,26 +32,27 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   adminOnly?: boolean;
   superAdminOnly?: boolean;
-  requiresPharmacy?: boolean;  // Nécessite d'être associé à une pharmacie
+  requiresBusiness?: boolean;  // Nécessite d'être associé à un commerce
+  featureFlag?: 'prescriptions' | 'expiryDates' | 'variants'; // Fonctionnalité requise
 }
 
-// Navigation pour les utilisateurs de pharmacie
-const pharmacyNavigation: NavItem[] = [
-  { name: 'Tableau de bord', href: '/', icon: LayoutDashboard, requiresPharmacy: true },
-  { name: 'Caisse', href: '/cash', icon: DollarSign, requiresPharmacy: true },
-  { name: 'Gestion Caisses', href: '/cash/registers', icon: Settings, adminOnly: true, requiresPharmacy: true },
-        { name: 'Produits', href: '/products', icon: Package, requiresPharmacy: true },
-        { name: 'Catégories', href: '/products/categories', icon: Tag, requiresPharmacy: true },
-  { name: 'Ventes', href: '/sales', icon: ShoppingCart, requiresPharmacy: true },
-  { name: 'Clients', href: '/customers', icon: Users, requiresPharmacy: true },
-  { name: 'Dettes clients', href: '/customers/debts', icon: DollarSign, requiresPharmacy: true },
-  { name: 'Prescriptions', href: '/prescriptions', icon: FileText, requiresPharmacy: true },
-  { name: 'Fournisseurs', href: '/suppliers', icon: Truck, requiresPharmacy: true },
-  { name: 'Mouvements Stock', href: '/stock/movements', icon: History, requiresPharmacy: true },
-  { name: 'Ajustements', href: '/stock/adjustments', icon: Edit3, requiresPharmacy: true },
-  { name: 'Rapports', href: '/reports', icon: BarChart3, requiresPharmacy: true },
-  { name: 'Utilisateurs', href: '/users', icon: UserCog, adminOnly: true, requiresPharmacy: true },
-  { name: 'Sync Cloud', href: '/settings/sync', icon: Cloud, adminOnly: true, requiresPharmacy: true },
+// Navigation pour les utilisateurs de commerce
+const businessNavigation: NavItem[] = [
+  { name: 'Tableau de bord', href: '/', icon: LayoutDashboard, requiresBusiness: true },
+  { name: 'Caisse', href: '/cash', icon: DollarSign, requiresBusiness: true },
+  { name: 'Gestion Caisses', href: '/cash/registers', icon: Settings, adminOnly: true, requiresBusiness: true },
+  { name: 'Produits', href: '/products', icon: Package, requiresBusiness: true },
+  { name: 'Catégories', href: '/products/categories', icon: Tag, requiresBusiness: true },
+  { name: 'Ventes', href: '/sales', icon: ShoppingCart, requiresBusiness: true },
+  { name: 'Clients', href: '/customers', icon: Users, requiresBusiness: true },
+  { name: 'Dettes clients', href: '/customers/debts', icon: DollarSign, requiresBusiness: true },
+  { name: 'Ordonnances', href: '/prescriptions', icon: FileText, requiresBusiness: true, featureFlag: 'prescriptions' },
+  { name: 'Fournisseurs', href: '/suppliers', icon: Truck, requiresBusiness: true },
+  { name: 'Mouvements Stock', href: '/stock/movements', icon: History, requiresBusiness: true },
+  { name: 'Ajustements', href: '/stock/adjustments', icon: Edit3, requiresBusiness: true },
+  { name: 'Rapports', href: '/reports', icon: BarChart3, requiresBusiness: true },
+  { name: 'Utilisateurs', href: '/users', icon: UserCog, adminOnly: true, requiresBusiness: true },
+  { name: 'Sync Cloud', href: '/settings/sync', icon: Cloud, adminOnly: true, requiresBusiness: true },
 ];
 
 // Navigation pour le super admin (gestion globale)
@@ -59,6 +63,16 @@ const superAdminNavigation: NavItem[] = [
 export default function Sidebar() {
   const { sidebarOpen, sidebarCollapsed, toggleSidebar, toggleSidebarCollapse } = useAppStore();
   const { user } = useAuthStore();
+  const businessConfig = getBusinessConfig();
+  
+  // Filtrer la navigation selon les fonctionnalités activées
+  const filteredNavigation = businessNavigation.filter((item) => {
+    // Vérifier si la fonctionnalité est activée pour ce type d'activité
+    if (item.featureFlag && !isFeatureEnabled(item.featureFlag)) {
+      return false;
+    }
+    return true;
+  });
   
   return (
     <>
@@ -83,14 +97,12 @@ export default function Sidebar() {
           <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
             <div className={clsx('flex items-center gap-3', sidebarCollapsed && 'justify-center w-full')}>
               <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m-8-8h16" />
-                </svg>
+                <Store className="w-6 h-6 text-white" />
               </div>
               {!sidebarCollapsed && (
                 <div>
-                  <h1 className="font-display font-bold text-gray-900">Pharmacie</h1>
-                  <p className="text-xs text-gray-500">Manager</p>
+                  <h1 className="font-display font-bold text-gray-900">{appConfig.APP_NAME}</h1>
+                  <p className="text-xs text-gray-500">{businessConfig.icon} {businessConfig.name}</p>
                 </div>
               )}
             </div>
@@ -138,11 +150,11 @@ export default function Sidebar() {
               </>
             )}
             
-            {/* Utilisateurs de pharmacie: menu complet */}
-            {pharmacyNavigation
+            {/* Utilisateurs de commerce: menu complet */}
+            {filteredNavigation
               .filter((item) => {
-                // Super admin sans pharmacie ne voit pas les menus pharmacie
-                if (user?.is_superuser && !user?.pharmacy_id && item.requiresPharmacy) return false;
+                // Super admin sans commerce ne voit pas les menus commerce
+                if (user?.is_superuser && !user?.pharmacy_id && item.requiresBusiness) return false;
                 // Admin only items
                 if (item.adminOnly && user?.role !== 'admin' && !user?.is_superuser) return false;
                 return true;

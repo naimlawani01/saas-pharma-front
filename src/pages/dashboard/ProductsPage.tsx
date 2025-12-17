@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
+import { isFeatureEnabled, getBusinessConfig } from '@/config/businessConfig';
 import { 
   Plus, 
   Search, 
@@ -50,6 +51,10 @@ interface Category {
 
 export default function ProductsPage() {
   const queryClient = useQueryClient();
+  const businessConfig = getBusinessConfig();
+  const showExpiryDates = isFeatureEnabled('expiryDates');
+  const showPrescriptions = isFeatureEnabled('prescriptions');
+  
   const [search, setSearch] = useState('');
   const [showLowStock, setShowLowStock] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
@@ -196,9 +201,9 @@ export default function ProductsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-display font-bold text-gray-900">Produits</h1>
+          <h1 className="text-2xl font-display font-bold text-gray-900">{businessConfig.terminology.productPlural}</h1>
           <p className="text-gray-500">
-            {products?.length || 0} produit(s) dans l'inventaire
+            {products?.length || 0} {businessConfig.terminology.product.toLowerCase()}(s) dans l'inventaire
           </p>
         </div>
         <div className="flex gap-2">
@@ -223,7 +228,7 @@ export default function ProductsPage() {
             className="btn-primary flex items-center gap-2"
           >
             <Plus className="w-5 h-5" />
-            Ajouter un produit
+            Ajouter un {businessConfig.terminology.product.toLowerCase()}
           </button>
         </div>
       </div>
@@ -300,12 +305,12 @@ export default function ProductsPage() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr className="text-left text-sm text-gray-500">
-                  <th className="px-6 py-4 font-medium">Produit</th>
+                  <th className="px-6 py-4 font-medium">{businessConfig.terminology.product}</th>
                   <th className="px-6 py-4 font-medium">Catégorie</th>
                   <th className="px-6 py-4 font-medium">Stock</th>
                   <th className="px-6 py-4 font-medium">Prix d'achat</th>
                   <th className="px-6 py-4 font-medium">Prix de vente</th>
-                  <th className="px-6 py-4 font-medium">Expiration</th>
+                  {showExpiryDates && <th className="px-6 py-4 font-medium">Expiration</th>}
                   <th className="px-6 py-4 font-medium">Statut</th>
                   <th className="px-6 py-4 font-medium w-32">Actions</th>
                 </tr>
@@ -322,7 +327,7 @@ export default function ProductsPage() {
                           <p className="font-medium text-gray-900">{product.name}</p>
                           <div className="flex items-center gap-2 text-sm text-gray-500">
                             {product.barcode && <span>{product.barcode}</span>}
-                            {product.is_prescription_required && (
+                            {showPrescriptions && product.is_prescription_required && (
                               <span className="badge badge-warning text-xs">Ordonnance</span>
                             )}
                           </div>
@@ -352,6 +357,7 @@ export default function ProductsPage() {
                     <td className="px-6 py-4 font-medium text-gray-900">
                       {formatCurrency(product.selling_price)}
                     </td>
+                    {showExpiryDates && (
                     <td className="px-6 py-4">
                       {product.expiry_date ? (
                         <span className={clsx(
@@ -364,6 +370,7 @@ export default function ProductsPage() {
                         <span className="text-gray-400">-</span>
                       )}
                     </td>
+                    )}
                     <td className="px-6 py-4">
                       <span className={clsx(
                         'badge',
@@ -410,9 +417,9 @@ export default function ProductsPage() {
         ) : (
           <div className="flex flex-col items-center justify-center h-64 text-gray-500">
             <Package className="w-12 h-12 mb-4 text-gray-300" />
-            <p>Aucun produit trouvé</p>
+            <p>Aucun {businessConfig.terminology.product.toLowerCase()} trouvé</p>
             <button onClick={handleAdd} className="mt-4 btn-primary">
-              Ajouter un produit
+              Ajouter un {businessConfig.terminology.product.toLowerCase()}
             </button>
           </div>
         )}
@@ -436,7 +443,7 @@ export default function ProductsPage() {
           setProductToDelete(null);
         }}
         onConfirm={confirmDelete}
-        title="Supprimer le produit"
+        title={`Supprimer le ${businessConfig.terminology.product.toLowerCase()}`}
         message={`Êtes-vous sûr de vouloir supprimer "${productToDelete?.name}" ? Cette action est irréversible.`}
         confirmText="Supprimer"
         type="danger"

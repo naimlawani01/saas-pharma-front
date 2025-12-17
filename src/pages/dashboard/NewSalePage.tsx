@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
+import { isFeatureEnabled, getBusinessConfig } from '@/config/businessConfig';
 import ReceiptModal from '@/components/sales/ReceiptModal';
 import QuoteModal from '@/components/sales/QuoteModal';
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner';
@@ -71,6 +72,9 @@ export default function NewSalePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const businessConfig = getBusinessConfig();
+  const showPrescriptions = isFeatureEnabled('prescriptions');
+  
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [discount, setDiscount] = useState(0);
@@ -100,7 +104,7 @@ export default function NewSalePage() {
     enabled: customerSearch.length >= 2,
   });
 
-  // Récupérer les prescriptions du client sélectionné
+  // Récupérer les prescriptions du client sélectionné (uniquement si fonctionnalité activée)
   const { data: prescriptions } = useQuery({
     queryKey: ['prescriptions-customer', customerId],
     queryFn: async () => {
@@ -108,7 +112,7 @@ export default function NewSalePage() {
       const response = await api.get(`/prescriptions/customer/${customerId}?status_filter=active`);
       return response.data;
     },
-    enabled: !!customerId,
+    enabled: !!customerId && showPrescriptions,
   });
 
   // Vérifier si une session de caisse est ouverte
@@ -170,7 +174,7 @@ export default function NewSalePage() {
       const products = await searchByBarcode.mutateAsync(barcode);
       
       if (products.length === 0) {
-        toast.error(`Produit non trouvé (code: ${barcode})`);
+        toast.error(`${businessConfig.terminology.product} non trouvé (code: ${barcode})`);
         return;
       }
 
@@ -178,7 +182,7 @@ export default function NewSalePage() {
       
       // Vérifier le stock
       if (product.quantity <= 0) {
-        toast.error('Produit en rupture de stock');
+        toast.error(`${businessConfig.terminology.product} en rupture de stock`);
         return;
       }
 
@@ -388,7 +392,7 @@ export default function NewSalePage() {
       }
       
       setCart(newCart);
-      toast.success(`${newCart.length} produit(s) chargé(s) depuis la prescription`);
+      toast.success(`${newCart.length} ${businessConfig.terminology.product.toLowerCase()}(s) chargé(s) depuis la prescription`);
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Erreur lors du chargement de la prescription');
     }
@@ -583,7 +587,7 @@ export default function NewSalePage() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Rechercher un produit (nom ou code-barre)..."
+                  placeholder={`Rechercher un ${businessConfig.terminology.product.toLowerCase()} (nom ou code-barre)...`}
                   className="input pl-10"
                   autoFocus
                 />
@@ -714,7 +718,7 @@ export default function NewSalePage() {
               <div className="text-center py-12 text-gray-500">
                 <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                 <p>Le panier est vide</p>
-                <p className="text-sm">Recherchez des produits à ajouter</p>
+                <p className="text-sm">Recherchez des {businessConfig.terminology.productPlural.toLowerCase()} à ajouter</p>
               </div>
             )}
           </div>
@@ -748,11 +752,11 @@ export default function NewSalePage() {
                   </button>
                 </div>
 
-                {/* Prescription selection */}
-                {prescriptions && prescriptions.length > 0 && (
+                {/* Prescription selection - uniquement pour les pharmacies */}
+                {showPrescriptions && prescriptions && prescriptions.length > 0 && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Prescription (optionnel)
+                      Ordonnance (optionnel)
                     </label>
                     <select
                       value={selectedPrescriptionId || ''}
@@ -767,7 +771,7 @@ export default function NewSalePage() {
                       }}
                       className="input text-sm"
                     >
-                      <option value="">Aucune prescription</option>
+                      <option value="">Aucune ordonnance</option>
                       {prescriptions.map((prescription: any) => (
                         <option key={prescription.id} value={prescription.id}>
                           {prescription.prescription_number} - {prescription.doctor_name}
@@ -784,7 +788,7 @@ export default function NewSalePage() {
                         }}
                         className="mt-2 text-xs text-red-600 hover:text-red-700"
                       >
-                        Effacer la prescription
+                        Effacer l'ordonnance
                       </button>
                     )}
                   </div>

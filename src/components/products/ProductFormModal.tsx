@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
+import { isFeatureEnabled, getBusinessConfig } from '@/config/businessConfig';
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
@@ -61,6 +62,12 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const isEditing = !!product;
+  const businessConfig = getBusinessConfig();
+  
+  // Fonctionnalités activées selon le type d'activité
+  const showPrescriptionField = isFeatureEnabled('prescriptions');
+  const showExpiryDates = isFeatureEnabled('expiryDates');
+  const showBarcode = isFeatureEnabled('barcode');
   
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
 
@@ -133,7 +140,7 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
     e.preventDefault();
     
     if (!formData.name.trim()) {
-      toast.error('Le nom du produit est requis');
+      toast.error(`Le nom du ${businessConfig.terminology.product.toLowerCase()} est requis`);
       return;
     }
     if (formData.selling_price <= 0) {
@@ -142,7 +149,7 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
     }
     
     if (!user?.pharmacy_id) {
-      toast.error('Erreur : aucune pharmacie associée à votre compte');
+      toast.error(`Erreur : aucun(e) ${businessConfig.terminology.business.toLowerCase()} associé(e) à votre compte`);
       return;
     }
 
@@ -174,20 +181,20 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? 'Modifier le produit' : 'Ajouter un produit'}
+      title={isEditing ? `Modifier le ${businessConfig.terminology.product.toLowerCase()}` : `Ajouter un ${businessConfig.terminology.product.toLowerCase()}`}
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Nom */}
           <div className="md:col-span-2">
-            <label className="label">Nom du produit *</label>
+            <label className="label">Nom du {businessConfig.terminology.product.toLowerCase()} *</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="input"
-              placeholder="Ex: Paracétamol 500mg"
+              placeholder={`Ex: ${businessConfig.id === 'pharmacy' ? 'Paracétamol 500mg' : 'Nom du produit'}`}
               required
             />
           </div>
@@ -203,7 +210,8 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
             />
           </div>
 
-          {/* Code-barres */}
+          {/* Code-barres - conditionnel */}
+          {showBarcode && (
           <div>
             <label className="label">Code-barres</label>
             <input
@@ -214,6 +222,7 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
               placeholder="1234567890123"
             />
           </div>
+          )}
 
           {/* SKU */}
           <div>
@@ -223,7 +232,7 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
               value={formData.sku || ''}
               onChange={(e) => setFormData({ ...formData, sku: e.target.value || null })}
               className="input"
-              placeholder="PARA001"
+              placeholder="REF001"
             />
           </div>
 
@@ -307,7 +316,9 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
             />
           </div>
 
-          {/* Date de fabrication */}
+          {/* Dates de fabrication et expiration - conditionnelles */}
+          {showExpiryDates && (
+            <>
           <div>
             <label className="label">Date de fabrication</label>
             <input
@@ -318,7 +329,6 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
             />
           </div>
 
-          {/* Date d'expiration */}
           <div>
             <label className="label">Date d'expiration</label>
             <input
@@ -328,9 +338,13 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
               className="input"
             />
           </div>
+            </>
+          )}
 
           {/* Options */}
           <div className="md:col-span-2 flex flex-wrap gap-6">
+            {/* Option ordonnance - uniquement pour les pharmacies */}
+            {showPrescriptionField && (
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -340,6 +354,7 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
               />
               <span className="text-sm text-gray-700">Nécessite une ordonnance</span>
             </label>
+            )}
 
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -348,7 +363,7 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
                 onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                 className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
               />
-              <span className="text-sm text-gray-700">Produit actif</span>
+              <span className="text-sm text-gray-700">{businessConfig.terminology.product} actif</span>
             </label>
           </div>
         </div>
@@ -369,7 +384,7 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
             className="btn-primary flex items-center gap-2"
           >
             {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {isEditing ? 'Enregistrer' : 'Créer le produit'}
+            {isEditing ? 'Enregistrer' : `Créer le ${businessConfig.terminology.product.toLowerCase()}`}
           </button>
         </div>
       </form>

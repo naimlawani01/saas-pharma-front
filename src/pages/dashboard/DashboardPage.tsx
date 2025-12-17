@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
+import { businessTypes, BusinessType } from '@/config/businessConfig';
 import { 
   TrendingUp, 
   Package, 
@@ -28,7 +29,24 @@ import {
 
 export default function DashboardPage() {
   const queryClient = useQueryClient();
-  const { isAuthenticated, accessToken } = useAuthStore();
+  const { isAuthenticated, accessToken, user } = useAuthStore();
+  // Note: businessConfig est gardé pour compatibilité, mais on utilise businessTypeConfig pour les données réelles
+
+  // Récupérer les infos du commerce
+  const { data: pharmacyInfo } = useQuery({
+    queryKey: ['my-pharmacy'],
+    queryFn: async () => {
+      const response = await api.get('/pharmacies/');
+      return response.data?.[0] || null;
+    },
+    enabled: isAuthenticated && !!accessToken && !user?.is_superuser,
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // Cache 5 minutes
+  });
+
+  // Obtenir la config du business type depuis la BDD
+  const currentBusinessType = pharmacyInfo?.business_type as BusinessType || 'general';
+  const businessTypeConfig = businessTypes[currentBusinessType] || businessTypes.general;
 
   // Récupérer les stats du dashboard
   const { data: dashboard, isLoading, isFetching } = useQuery({
@@ -126,19 +144,47 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-display font-bold text-gray-900">Tableau de bord</h1>
-          <p className="text-gray-500">Vue d'ensemble de votre pharmacie</p>
+      {/* En-tête personnalisé selon le commerce */}
+      <div className={`rounded-2xl p-6 text-white shadow-lg bg-gradient-to-r ${
+        currentBusinessType === 'pharmacy' ? 'from-emerald-500 to-emerald-600' :
+        currentBusinessType === 'grocery' ? 'from-orange-500 to-orange-600' :
+        currentBusinessType === 'hardware' ? 'from-slate-600 to-slate-700' :
+        currentBusinessType === 'cosmetics' ? 'from-pink-500 to-pink-600' :
+        currentBusinessType === 'auto_parts' ? 'from-blue-500 to-blue-600' :
+        currentBusinessType === 'clothing' ? 'from-violet-500 to-violet-600' :
+        currentBusinessType === 'electronics' ? 'from-cyan-500 to-cyan-600' :
+        currentBusinessType === 'restaurant' ? 'from-amber-500 to-amber-600' :
+        currentBusinessType === 'wholesale' ? 'from-indigo-500 to-indigo-600' :
+        'from-purple-600 to-purple-700'
+      }`}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-4xl shadow-inner">
+              {businessTypeConfig.icon}
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-display font-bold">
+                {pharmacyInfo?.name || 'Tableau de bord'}
+              </h1>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium">
+                  {businessTypeConfig.name}
+                </span>
+                {pharmacyInfo?.city && (
+                  <span className="text-white/80 text-sm">• {pharmacyInfo.city}</span>
+                )}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={isFetching}
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all self-start sm:self-center"
+          >
+            <RefreshCw className={`w-5 h-5 ${isFetching ? 'animate-spin' : ''}`} />
+            Actualiser
+          </button>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={isFetching}
-          className="btn-secondary flex items-center gap-2"
-        >
-          <RefreshCw className={`w-5 h-5 ${isFetching ? 'animate-spin' : ''}`} />
-          Actualiser
-        </button>
       </div>
 
       {/* Stats cards */}
@@ -160,7 +206,7 @@ export default function DashboardPage() {
           iconColor="text-blue-600"
         />
         <StatCard
-          title="Produits en stock"
+          title={`${businessTypeConfig.terminology.productPlural} en stock`}
           value={dashboard?.inventory?.total_products || 0}
           subValue={`Valeur: ${formatCurrency(dashboard?.inventory?.stock_value || 0)}`}
           icon={Package}
@@ -225,7 +271,7 @@ export default function DashboardPage() {
       )}
 
       {/* Alertes */}
-      {(dashboard?.inventory?.low_stock_count > 0 || dashboard?.inventory?.expiring_soon_count > 0) && (
+      {(dashboard?.inventory?.low_stock_count > 0 || (businessTypeConfig.features.expiryDates && dashboard?.inventory?.expiring_soon_count > 0)) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {dashboard?.inventory?.low_stock_count > 0 && (
             <div className="card bg-yellow-50 border-yellow-200">
@@ -236,13 +282,13 @@ export default function DashboardPage() {
                 <div>
                   <p className="font-medium text-yellow-800">Stock critique</p>
                   <p className="text-sm text-yellow-600">
-                    {dashboard.inventory.low_stock_count} produit(s) à réapprovisionner
+                    {dashboard.inventory.low_stock_count} {businessTypeConfig.terminology.product.toLowerCase()}(s) à réapprovisionner
                   </p>
                 </div>
               </div>
             </div>
           )}
-          {dashboard?.inventory?.expiring_soon_count > 0 && (
+          {businessTypeConfig.features.expiryDates && dashboard?.inventory?.expiring_soon_count > 0 && (
             <div className="card bg-red-50 border-red-200">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
@@ -251,7 +297,7 @@ export default function DashboardPage() {
                 <div>
                   <p className="font-medium text-red-800">Expiration proche</p>
                   <p className="text-sm text-red-600">
-                    {dashboard.inventory.expiring_soon_count} produit(s) bientôt périmé(s)
+                    {dashboard.inventory.expiring_soon_count} {businessTypeConfig.terminology.product.toLowerCase()}(s) bientôt périmé(s)
                   </p>
                 </div>
               </div>
@@ -351,7 +397,7 @@ export default function DashboardPage() {
         <div className="card">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="font-semibold text-gray-900 text-lg">Produits les plus vendus</h3>
+              <h3 className="font-semibold text-gray-900 text-lg">{businessTypeConfig.terminology.productPlural} les plus vendu(e)s</h3>
               <p className="text-sm text-gray-500 mt-1">Top 5</p>
             </div>
             <Package className="w-5 h-5 text-purple-600" />
@@ -418,12 +464,12 @@ export default function DashboardPage() {
       {/* Stock critique */}
       {lowStock && lowStock.length > 0 && (
         <div className="card">
-          <h3 className="font-semibold text-gray-900 mb-4">Produits en stock critique</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">{businessTypeConfig.terminology.productPlural} en stock critique</h3>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="text-left text-sm text-gray-500 border-b">
-                  <th className="pb-3 font-medium">Produit</th>
+                  <th className="pb-3 font-medium">{businessTypeConfig.terminology.product}</th>
                   <th className="pb-3 font-medium">Stock actuel</th>
                   <th className="pb-3 font-medium">Stock minimum</th>
                   <th className="pb-3 font-medium">Déficit</th>

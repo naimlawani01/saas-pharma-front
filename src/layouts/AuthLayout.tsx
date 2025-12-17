@@ -1,8 +1,12 @@
 import { Outlet, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
+import { Store } from 'lucide-react';
+import { appConfig } from '@/config/appConfig';
+import { getBusinessConfig } from '@/config/businessConfig';
 
 export default function AuthLayout() {
   const { isAuthenticated } = useAuthStore();
+  const businessConfig = getBusinessConfig();
   
   // Si déjà connecté, rediriger vers le dashboard
   if (isAuthenticated) {
@@ -10,28 +14,26 @@ export default function AuthLayout() {
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 flex">
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-900 flex">
       {/* Panneau gauche - Branding */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12 text-white">
         <div className="max-w-md">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-8">
             <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m-8-8h16" />
-              </svg>
+              <Store className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-display font-bold">Pharmacie Manager</h1>
-              <p className="text-primary-200 text-sm">Gestion de pharmacie</p>
+              <h1 className="text-2xl font-display font-bold">{appConfig.APP_NAME}</h1>
+              <p className="text-blue-200 text-sm">{appConfig.APP_TAGLINE}</p>
             </div>
           </div>
           
           <h2 className="text-4xl font-display font-bold mb-4">
-            Gérez votre  en toute simplicité
+            Gérez votre {businessConfig.terminology.business.toLowerCase()} en toute simplicité
           </h2>
           
-          <p className="text-primary-100 text-lg mb-8">
+          <p className="text-blue-100 text-lg mb-8">
             Une solution complète pour la gestion de stock, les ventes, 
             les clients et les fournisseurs. Fonctionne même sans Internet.
           </p>

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
-import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Loader2, AlertCircle, Store } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { checkBackendConnection, api } from '@/services/api';
+import { appConfig } from '@/config/appConfig';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -105,12 +106,10 @@ export default function LoginPage() {
       {/* Logo mobile */}
       <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
         <div className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center">
-          <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m-8-8h16" />
-          </svg>
+          <Store className="w-7 h-7 text-white" />
         </div>
         <div>
-          <h1 className="text-xl font-display font-bold text-gray-900">Pharmacie Manager</h1>
+          <h1 className="text-xl font-display font-bold text-gray-900">{appConfig.APP_NAME}</h1>
         </div>
       </div>
       

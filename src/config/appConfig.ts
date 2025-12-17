@@ -1,6 +1,7 @@
 /**
- * Configuration de l'application Pharmacie Manager
+ * Configuration de l'application GestStock Pro
  * 
+ * Application de gestion de stock multi-secteurs
  * Ces valeurs peuvent être modifiées avant le build pour personnaliser l'app
  */
 
@@ -14,12 +15,17 @@ export const appConfig = {
   /**
    * Nom de l'application
    */
-  APP_NAME: 'Pharmacie Manager',
+  APP_NAME: 'GestStock Pro',
+  
+  /**
+   * Sous-titre / Description courte
+   */
+  APP_TAGLINE: 'Gestion de stock simplifiée',
   
   /**
    * Version de l'application
    */
-  APP_VERSION: '1.0.0',
+  APP_VERSION: '2.0.0',
   
   /**
    * Mode debug

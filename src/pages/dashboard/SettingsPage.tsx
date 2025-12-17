@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
+import { getBusinessConfig, isFeatureEnabled } from '@/config/businessConfig';
 import { 
   User,
   Building,
@@ -16,16 +17,20 @@ import {
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
 
-const tabs = [
+// Les onglets sont générés dynamiquement selon le type d'activité
+const getSettingsTabs = () => {
+  const businessConfig = getBusinessConfig();
+  return [
   { id: 'profile', name: 'Profil', icon: User },
-  { id: 'pharmacy', name: 'Pharmacie', icon: Building },
+    { id: 'pharmacy', name: businessConfig.terminology.business, icon: Building },
   { id: 'notifications', name: 'Notifications', icon: Bell },
   { id: 'security', name: 'Sécurité', icon: Shield },
   { id: 'appearance', name: 'Apparence', icon: Palette },
   { id: 'sync', name: 'Synchronisation', icon: Database },
 ];
+};
 
-interface Pharmacy {
+interface Business {
   id: number;
   name: string;
   address: string | null;
@@ -34,6 +39,7 @@ interface Pharmacy {
   phone: string | null;
   email: string | null;
   license_number: string | null;
+  business_type: string;
   is_active: boolean;
 }
 
@@ -41,14 +47,17 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
   const { user } = useAuthStore();
   const { theme, setTheme, isOnline, pendingSyncCount } = useAppStore();
+  const businessConfig = getBusinessConfig();
+  const tabs = getSettingsTabs();
+  const showExpiryNotifications = isFeatureEnabled('expiryDates');
 
-  // Récupérer les informations de la pharmacie
-  const { data: pharmacy, isLoading: loadingPharmacy } = useQuery({
+  // Récupérer les informations du commerce
+  const { data: business, isLoading: loadingBusiness } = useQuery({
     queryKey: ['pharmacy', user?.pharmacy_id],
     queryFn: async () => {
       if (!user?.pharmacy_id) return null;
       const response = await api.get(`/pharmacies/${user.pharmacy_id}`);
-      return response.data as Pharmacy;
+      return response.data as Business;
     },
     enabled: !!user?.pharmacy_id && !user?.is_superuser,
   });
@@ -146,10 +155,10 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'pharmacy' && (
-            <PharmacySettingsTab 
-              pharmacy={pharmacy} 
-              isLoading={loadingPharmacy}
-              pharmacyId={user?.pharmacy_id}
+            <BusinessSettingsTab 
+              business={business} 
+              isLoading={loadingBusiness}
+              businessId={user?.pharmacy_id}
             />
           )}
 
@@ -298,7 +307,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div>
                     <p className="font-medium text-gray-900">Alertes de stock</p>
-                    <p className="text-sm text-gray-500">Notifier quand un produit est en stock critique</p>
+                    <p className="text-sm text-gray-500">Notifier quand un {businessConfig.terminology.product.toLowerCase()} est en stock critique</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" defaultChecked className="sr-only peer" />
@@ -306,16 +315,18 @@ export default function SettingsPage() {
                   </label>
                 </div>
                 
+                {showExpiryNotifications && (
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div>
-                    <p className="font-medium text-gray-900">Expiration des produits</p>
-                    <p className="text-sm text-gray-500">Notifier avant expiration des produits</p>
+                      <p className="font-medium text-gray-900">Expiration des {businessConfig.terminology.productPlural.toLowerCase()}</p>
+                      <p className="text-sm text-gray-500">Notifier avant expiration des {businessConfig.terminology.productPlural.toLowerCase()}</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" defaultChecked className="sr-only peer" />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                   </label>
                 </div>
+                )}
                 
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div>
@@ -336,17 +347,19 @@ export default function SettingsPage() {
   );
 }
 
-// Composant pour l'onglet Pharmacie
-function PharmacySettingsTab({ 
-  pharmacy, 
+// Composant pour l'onglet Commerce/Pharmacie
+function BusinessSettingsTab({ 
+  business, 
   isLoading, 
-  pharmacyId 
+  businessId 
 }: { 
-  pharmacy: Pharmacy | null | undefined; 
+  business: Business | null | undefined; 
   isLoading: boolean;
-  pharmacyId?: number | null;
+  businessId?: number | null;
 }) {
   const queryClient = useQueryClient();
+  const businessConfig = getBusinessConfig();
+  
   const [formData, setFormData] = useState({
     name: '',
     license_number: '',
@@ -357,30 +370,30 @@ function PharmacySettingsTab({
     country: 'Guinée',
   });
 
-  // Mettre à jour le formulaire quand les données de la pharmacie sont chargées
+  // Mettre à jour le formulaire quand les données du commerce sont chargées
   useEffect(() => {
-    if (pharmacy) {
+    if (business) {
       setFormData({
-        name: pharmacy.name || '',
-        license_number: pharmacy.license_number || '',
-        phone: pharmacy.phone || '',
-        address: pharmacy.address || '',
-        email: pharmacy.email || '',
-        city: pharmacy.city || '',
-        country: pharmacy.country || 'Guinée',
+        name: business.name || '',
+        license_number: business.license_number || '',
+        phone: business.phone || '',
+        address: business.address || '',
+        email: business.email || '',
+        city: business.city || '',
+        country: business.country || 'Guinée',
       });
     }
-  }, [pharmacy]);
+  }, [business]);
 
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
-      if (!pharmacyId) throw new Error('Aucune pharmacie associée');
-      const response = await api.put(`/pharmacies/${pharmacyId}`, data);
+      if (!businessId) throw new Error(`Aucun(e) ${businessConfig.terminology.business.toLowerCase()} associé(e)`);
+      const response = await api.put(`/pharmacies/${businessId}`, data);
       return response.data;
     },
     onSuccess: () => {
-      toast.success('Informations de la pharmacie mises à jour');
-      queryClient.invalidateQueries({ queryKey: ['pharmacy', pharmacyId] });
+      toast.success(`Informations ${businessConfig.terminology.business.toLowerCase()} mises à jour`);
+      queryClient.invalidateQueries({ queryKey: ['pharmacy', businessId] });
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.detail || 'Erreur lors de la mise à jour');
@@ -389,8 +402,8 @@ function PharmacySettingsTab({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pharmacyId) {
-      toast.error('Aucune pharmacie associée');
+    if (!businessId) {
+      toast.error(`Aucun(e) ${businessConfig.terminology.business.toLowerCase()} associé(e)`);
       return;
     }
     updateMutation.mutate(formData);
@@ -406,16 +419,16 @@ function PharmacySettingsTab({
     );
   }
 
-  if (!pharmacy && !isLoading) {
+  if (!business && !isLoading) {
     return (
       <div className="card">
         <div className="text-center p-12">
           <Building className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Aucune pharmacie associée
+            Aucun(e) {businessConfig.terminology.business.toLowerCase()} associé(e)
           </h3>
           <p className="text-gray-500">
-            Votre compte n'est pas associé à une pharmacie.
+            Votre compte n'est pas associé à un(e) {businessConfig.terminology.business.toLowerCase()}.
           </p>
         </div>
       </div>
@@ -424,12 +437,12 @@ function PharmacySettingsTab({
 
   return (
     <div className="card">
-      <h2 className="text-lg font-semibold text-gray-900 mb-6">Informations de la pharmacie</h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-6">Informations de {businessConfig.terminology.business.toLowerCase()}</h2>
       
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <label className="label">Nom de la pharmacie *</label>
+            <label className="label">Nom de {businessConfig.terminology.business.toLowerCase()} *</label>
             <input
               type="text"
               value={formData.name}
@@ -439,7 +452,7 @@ function PharmacySettingsTab({
             />
           </div>
           <div>
-            <label className="label">Numéro de licence</label>
+            <label className="label">Numéro de registre / licence</label>
             <input
               type="text"
               value={formData.license_number}
@@ -493,7 +506,7 @@ function PharmacySettingsTab({
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="input"
-              placeholder="contact@pharmacie.gn"
+              placeholder="contact@entreprise.gn"
             />
           </div>
         </div>
