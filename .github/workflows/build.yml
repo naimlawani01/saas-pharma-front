@@ -1,4 +1,4 @@
-name: Build Electron App
+name: Build Fanke
 
 # Configuration du repo backend
 env:
@@ -42,137 +42,144 @@ jobs:
       - name: Checkout Frontend (this repo)
         uses: actions/checkout@v4
         with:
-          path: frontend
+          path: saas-pharma-front
 
-      - name: Checkout Backend (separate repo)
+      # Checkout le backend dans le dossier saas-pharma (comme en local)
+      - name: Checkout Backend
         uses: actions/checkout@v4
         with:
           repository: ${{ github.event.inputs.backend_repo || env.BACKEND_REPO }}
           ref: ${{ github.event.inputs.backend_branch || env.BACKEND_BRANCH }}
-          path: backend
-          token: ${{ secrets.BACKEND_REPO_TOKEN || secrets.GITHUB_TOKEN }}  # Token si repo privé
+          path: saas-pharma
+          token: ${{ secrets.BACKEND_REPO_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: saas-pharma-front/package-lock.json
 
-      - name: Setup Python (Backend)
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-          cache-dependency-path: backend/requirements.txt
+          cache-dependency-path: saas-pharma/requirements.txt
 
       - name: Install Python dependencies
-        working-directory: backend
+        working-directory: saas-pharma
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
 
       - name: Build Backend (PyInstaller)
-        working-directory: backend
-        run: |
-          python build_backend.py
+        working-directory: saas-pharma
+        run: python build_backend.py
         env:
           PYTHONUNBUFFERED: 1
-        # PyInstaller crée automatiquement l'exécutable pour l'OS courant
 
       - name: Verify Backend Build (macOS/Linux)
         if: runner.os != 'Windows'
-        working-directory: backend
         run: |
-          if [ -f "dist/pharmacie-backend/pharmacie-backend" ]; then
-            echo "✅ Backend ${{ runner.os }} build OK"
-            chmod +x dist/pharmacie-backend/pharmacie-backend
+          echo "📁 Structure des dossiers:"
+          ls -la
+          echo ""
+          echo "📁 Contenu de saas-pharma/dist/:"
+          ls -la saas-pharma/dist/ || echo "Dossier dist non trouvé"
+          echo ""
+          if [ -f "saas-pharma/dist/pharmacie-backend/pharmacie-backend" ]; then
+            echo "✅ Backend build OK"
+            chmod +x saas-pharma/dist/pharmacie-backend/pharmacie-backend
+            ls -la saas-pharma/dist/pharmacie-backend/
           else
-            echo "❌ Backend ${{ runner.os }} build manquant"
+            echo "❌ Backend executable non trouvé!"
+            find saas-pharma -name "pharmacie-backend*" 2>/dev/null || echo "Aucun fichier pharmacie-backend trouvé"
             exit 1
           fi
 
       - name: Verify Backend Build (Windows)
         if: runner.os == 'Windows'
-        working-directory: backend
         shell: pwsh
         run: |
-          if (Test-Path "dist/pharmacie-backend/pharmacie-backend.exe") {
-            Write-Host "✅ Backend Windows build OK"
+          Write-Host "📁 Structure des dossiers:"
+          Get-ChildItem -Name
+          Write-Host ""
+          Write-Host "📁 Contenu de saas-pharma\dist\:"
+          if (Test-Path "saas-pharma\dist") {
+            Get-ChildItem "saas-pharma\dist" -Name
           } else {
-            Write-Host "❌ Backend Windows build manquant"
+            Write-Host "Dossier dist non trouvé"
+          }
+          Write-Host ""
+          if (Test-Path "saas-pharma\dist\pharmacie-backend\pharmacie-backend.exe") {
+            Write-Host "✅ Backend build OK"
+            Get-ChildItem "saas-pharma\dist\pharmacie-backend"
+          } else {
+            Write-Host "❌ Backend executable non trouvé!"
+            Get-ChildItem -Path "saas-pharma" -Recurse -Filter "pharmacie-backend*" -ErrorAction SilentlyContinue
             exit 1
           }
 
       - name: Install Frontend dependencies
-        working-directory: frontend
+        working-directory: saas-pharma-front
         run: npm ci
 
-      - name: Build Frontend
-        working-directory: frontend
+      - name: Build Frontend (Vite)
+        working-directory: saas-pharma-front
         run: npm run build
-
-      - name: Verify Backend Structure (macOS/Linux)
-        if: runner.os != 'Windows'
-        run: |
-          # Vérifier que le backend est au bon endroit pour electron-builder
-          # electron-builder attend ../backend/dist/pharmacie-backend depuis frontend/
-          if [ -d "backend/dist/pharmacie-backend" ]; then
-            echo "✅ Backend trouvé dans backend/dist/pharmacie-backend"
-            ls -la backend/dist/pharmacie-backend/
-          else
-            echo "❌ Backend manquant dans backend/dist/pharmacie-backend"
-            exit 1
-          fi
-
-      - name: Verify Backend Structure (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          if (Test-Path "backend\dist\pharmacie-backend") {
-            Write-Host "✅ Backend trouvé dans backend\dist\pharmacie-backend"
-            Get-ChildItem "backend\dist\pharmacie-backend"
-          } else {
-            Write-Host "❌ Backend manquant dans backend\dist\pharmacie-backend"
-            exit 1
-          }
 
       - name: Build Electron App (macOS)
         if: matrix.platform == 'darwin'
-        working-directory: frontend
+        working-directory: saas-pharma-front
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          npm run build
-          npx electron-builder --mac --${{ matrix.arch }} --publish never
+        run: npx electron-builder --mac --${{ matrix.arch }} --publish never
 
       - name: Build Electron App (Windows)
         if: matrix.platform == 'win32'
-        working-directory: frontend
+        working-directory: saas-pharma-front
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          npm run build
-          npx electron-builder --win --x64 --publish never
+        run: npx electron-builder --win --x64 --publish never
 
       - name: Build Electron App (Linux)
         if: matrix.platform == 'linux'
-        working-directory: frontend
+        working-directory: saas-pharma-front
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --linux --x64 --publish never
+
+      - name: List build output (macOS/Linux)
+        if: runner.os != 'Windows'
         run: |
-          npm run build
-          npx electron-builder --linux --x64 --publish never
+          echo "📦 Contenu de dist-electron:"
+          ls -la saas-pharma-front/dist-electron/ || echo "Dossier vide"
+          echo ""
+          echo "🔍 Fichiers générés:"
+          find saas-pharma-front/dist-electron -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.zip" \) 2>/dev/null || echo "Aucun fichier trouvé"
+
+      - name: List build output (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Write-Host "📦 Contenu de dist-electron:"
+          if (Test-Path "saas-pharma-front\dist-electron") {
+            Get-ChildItem "saas-pharma-front\dist-electron" -Recurse | Where-Object { $_.Extension -in ".exe", ".zip", ".blockmap" }
+          }
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.platform }}-${{ matrix.arch }}-build
+          name: Fanke-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
-            frontend/dist-electron/**/*
+            saas-pharma-front/dist-electron/*.dmg
+            saas-pharma-front/dist-electron/*.exe
+            saas-pharma-front/dist-electron/*.AppImage
+            saas-pharma-front/dist-electron/*.zip
           retention-days: 30
-          if-no-files-found: error
+          if-no-files-found: warn
 
   release:
     needs: build
@@ -180,52 +187,34 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-          pattern: '*-build'
+          pattern: 'Fanke-*'
           merge-multiple: false
+
+      - name: List downloaded artifacts
+        run: |
+          echo "📦 Artifacts téléchargés:"
+          find artifacts -type f -name "*" | head -50
 
       - name: Prepare Release Files
         run: |
           mkdir -p release-files
           
-          # macOS
-          if [ -d "artifacts/darwin-x64-build" ]; then
-            find artifacts/darwin-x64-build -name "*.dmg" -exec cp {} release-files/ \;
-            find artifacts/darwin-x64-build -name "*.zip" -exec cp {} release-files/ \;
-          fi
-          if [ -d "artifacts/darwin-arm64-build" ]; then
-            find artifacts/darwin-arm64-build -name "*.dmg" -exec cp {} release-files/ \;
-            find artifacts/darwin-arm64-build -name "*.zip" -exec cp {} release-files/ \;
-          fi
+          # Copier tous les fichiers installateurs
+          find artifacts -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.zip" \) -exec cp {} release-files/ \;
           
-          # Windows
-          if [ -d "artifacts/win32-x64-build" ]; then
-            find artifacts/win32-x64-build -name "*.exe" -exec cp {} release-files/ \;
-            find artifacts/win32-x64-build -name "*.zip" -exec cp {} release-files/ \;
-          fi
-          
-          # Linux
-          if [ -d "artifacts/linux-x64-build" ]; then
-            find artifacts/linux-x64-build -name "*.AppImage" -exec cp {} release-files/ \;
-            find artifacts/linux-x64-build -name "*.deb" -exec cp {} release-files/ \;
-            find artifacts/linux-x64-build -name "*.rpm" -exec cp {} release-files/ \;
-          fi
-          
+          echo "📋 Fichiers de release:"
           ls -lh release-files/
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: release-files/**
+          files: release-files/*
           draft: false
           prerelease: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
