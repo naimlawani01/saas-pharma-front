@@ -1,8 +1,8 @@
 {
-  "name": "geststock-pro",
+  "name": "fanke",
   "version": "2.0.0",
   "type": "module",
-  "description": "Application de gestion de stock multi-secteurs - Desktop avec backend intégré",
+  "description": "Fanke - Application de gestion de stock multi-secteurs",
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
@@ -43,8 +43,8 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.geststock-pro.app",
-    "productName": "GestStock Pro",
+    "appId": "com.fanke.app",
+    "productName": "Fanke",
     "directories": {
       "output": "dist-electron"
     },

@@ -297,7 +297,7 @@ export const businessTypes: Record<BusinessType, BusinessTypeConfig> = {
 export const BUSINESS_TYPES: BusinessTypeConfig[] = Object.values(businessTypes);
 
 // Stockage local du type d'activité
-const BUSINESS_TYPE_KEY = 'geststock_business_type';
+const BUSINESS_TYPE_KEY = 'fanke_business_type';
 
 export function getBusinessType(): BusinessType {
   try {

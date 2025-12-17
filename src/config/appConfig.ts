@@ -1,5 +1,5 @@
 /**
- * Configuration de l'application GestStock Pro
+ * Configuration de l'application Fanke
  * 
  * Application de gestion de stock multi-secteurs
  * Ces valeurs peuvent être modifiées avant le build pour personnaliser l'app
@@ -15,7 +15,7 @@ export const appConfig = {
   /**
    * Nom de l'application
    */
-  APP_NAME: 'GestStock Pro',
+  APP_NAME: 'Fanke',
   
   /**
    * Sous-titre / Description courte
