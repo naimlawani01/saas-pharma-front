@@ -11,8 +11,8 @@
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "npm run build && npm run backend:build && electron-builder",
     "electron:preview": "npm run build && electron .",
-    "backend:build": "cd ../backend && python build_backend.py",
-    "backend:install-deps": "cd ../backend && pip install -r requirements.txt"
+    "backend:build": "cd ../saas-pharma && python build_backend.py",
+    "backend:install-deps": "cd ../saas-pharma && pip install -r requirements.txt"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -55,7 +55,7 @@
     "asar": false,
     "extraResources": [
       {
-        "from": "../backend/dist/pharmacie-backend",
+        "from": "../saas-pharma/dist/pharmacie-backend",
         "to": "backend/pharmacie-backend"
       }
     ],

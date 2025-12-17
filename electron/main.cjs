@@ -20,7 +20,7 @@ const BACKEND_URL = `http://localhost:${BACKEND_PORT}`;
 function getBackendPath() {
   if (isDev) {
     // En développement, utiliser le dossier backend à la racine du projet
-    return path.join(__dirname, '..', '..', 'backend');
+    return path.join(__dirname, '..', '..', 'saas-pharma');
   } else {
     // En production, le backend packagé est dans les ressources
     return path.join(process.resourcesPath, 'backend', 'pharmacie-backend');
@@ -47,7 +47,7 @@ function getBackendExecutable() {
 function getPythonPath() {
   // En dev, utiliser le Python du système ou du venv
   const platform = process.platform;
-  const backendPath = path.join(__dirname, '..', '..', 'backend');
+  const backendPath = path.join(__dirname, '..', '..', 'saas-pharma');
   const projectRoot = path.join(__dirname, '..', '..');
   
   if (platform === 'win32') {
@@ -132,7 +132,7 @@ async function startBackend() {
 
 // Démarrage en mode développement (Python + uvicorn)
 function startBackendDev() {
-  const backendPath = path.join(__dirname, '..', '..', 'backend');
+  const backendPath = path.join(__dirname, '..', '..', 'saas-pharma');
   const pythonPath = getPythonPath();
   
   console.log('[Backend] Python path:', pythonPath);
