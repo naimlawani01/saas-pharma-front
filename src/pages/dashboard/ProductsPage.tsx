@@ -82,6 +82,9 @@ export default function ProductsPage() {
       if (search) params.append('search', search);
       if (showLowStock) params.append('low_stock', 'true');
       if (selectedCategoryId) params.append('category_id', selectedCategoryId.toString());
+      // Augmenter la limite pour charger tous les produits (ou au moins beaucoup plus)
+      params.append('limit', '10000'); // Limite très élevée pour charger tous les produits
+      params.append('skip', '0');
       const response = await api.get(`/products?${params}`);
       return response.data as Product[];
     },
