@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
+import { parseErrors, scrollToTop } from '@/utils/errorHandler';
+import { AlertCircle, X } from 'lucide-react';
 import { 
   Plus,
   RefreshCw,
@@ -346,6 +348,9 @@ function AdjustmentModal({ products, pharmacyId, onClose, onSuccess }: Adjustmen
 
   const selectedProduct = products.find(p => p.id === formData.product_id);
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
+
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
       const response = await api.post('/stock/adjustments', data);
@@ -353,23 +358,40 @@ function AdjustmentModal({ products, pharmacyId, onClose, onSuccess }: Adjustmen
     },
     onSuccess: () => {
       toast.success('Ajustement créé avec succès');
+      setErrors({});
+      setGeneralError(null);
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la création de l\'ajustement');
+      const { fieldErrors, generalError: genError } = parseErrors(error);
+      setErrors(fieldErrors);
+      setGeneralError(genError);
+      scrollToTop();
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Réinitialiser les erreurs
+    setErrors({});
+    setGeneralError(null);
+
+    // Validation côté client
+    const clientErrors: Record<string, string> = {};
+
     if (formData.product_id === 0) {
-      toast.error('Veuillez sélectionner un produit');
-      return;
+      clientErrors.product_id = 'Veuillez sélectionner un produit';
     }
 
     if (formData.quantity_adjusted === 0) {
-      toast.error('La quantité ajustée doit être différente de 0');
+      clientErrors.quantity_adjusted = 'La quantité ajustée doit être différente de 0';
+    }
+
+    // Si erreurs de validation, les afficher et arrêter
+    if (Object.keys(clientErrors).length > 0) {
+      setErrors(clientErrors);
+      scrollToTop();
       return;
     }
 
@@ -382,13 +404,33 @@ function AdjustmentModal({ products, pharmacyId, onClose, onSuccess }: Adjustmen
   return (
     <Modal isOpen={true} onClose={onClose} title="Nouvel ajustement de stock" size="lg">
       <form onSubmit={handleSubmit}>
+        {/* Affichage des erreurs générales */}
+        {generalError && (
+          <div className="mb-4 flex items-start gap-3 rounded-lg border-l-4 border-red-400 bg-red-50 p-4 text-red-700">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">{generalError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setGeneralError(null)}
+              className="flex-shrink-0 p-1 hover:bg-red-100 rounded"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         <div className="space-y-5">
           <div>
             <label className="label">Produit *</label>
             <select
               value={formData.product_id}
-              onChange={(e) => setFormData({ ...formData, product_id: parseInt(e.target.value) })}
-              className="input"
+              onChange={(e) => {
+                setFormData({ ...formData, product_id: parseInt(e.target.value) });
+                if (errors.product_id) setErrors({ ...errors, product_id: '' });
+              }}
+              className={`input ${errors.product_id ? 'border-red-500 focus:ring-red-500' : ''}`}
               required
             >
               <option value={0}>Sélectionner un produit</option>
@@ -398,6 +440,12 @@ function AdjustmentModal({ products, pharmacyId, onClose, onSuccess }: Adjustmen
                 </option>
               ))}
             </select>
+            {errors.product_id && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {errors.product_id}
+              </p>
+            )}
           </div>
 
           {selectedProduct && (
@@ -421,11 +469,20 @@ function AdjustmentModal({ products, pharmacyId, onClose, onSuccess }: Adjustmen
             <input
               type="number"
               value={formData.quantity_adjusted || ''}
-              onChange={(e) => setFormData({ ...formData, quantity_adjusted: parseInt(e.target.value) || 0 })}
-              className="input"
+              onChange={(e) => {
+                setFormData({ ...formData, quantity_adjusted: parseInt(e.target.value) || 0 });
+                if (errors.quantity_adjusted) setErrors({ ...errors, quantity_adjusted: '' });
+              }}
+              className={`input ${errors.quantity_adjusted ? 'border-red-500 focus:ring-red-500' : ''}`}
               placeholder="Ex: +10 ou -5"
               required
             />
+            {errors.quantity_adjusted && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {errors.quantity_adjusted}
+              </p>
+            )}
             <p className="text-xs text-gray-500 mt-1.5">
               Positif pour augmenter le stock, négatif pour diminuer
             </p>

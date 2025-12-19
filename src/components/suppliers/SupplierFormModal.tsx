@@ -3,8 +3,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle, X } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { parseErrors, scrollToTop } from '@/utils/errorHandler';
 
 interface SupplierFormData {
   name: string;
@@ -42,6 +43,8 @@ export default function SupplierFormModal({ isOpen, onClose, supplier }: Supplie
   const isEditing = !!supplier;
   
   const [formData, setFormData] = useState<SupplierFormData>(initialFormData);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && supplier) {
@@ -59,6 +62,9 @@ export default function SupplierFormModal({ isOpen, onClose, supplier }: Supplie
     } else if (isOpen) {
       setFormData(initialFormData);
     }
+    // Réinitialiser les erreurs quand on ouvre/ferme le modal
+    setErrors({});
+    setGeneralError(null);
   }, [isOpen, supplier]);
 
   const createMutation = useMutation({
@@ -68,10 +74,15 @@ export default function SupplierFormModal({ isOpen, onClose, supplier }: Supplie
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
       toast.success('Fournisseur créé avec succès');
+      setErrors({});
+      setGeneralError(null);
       onClose();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la création');
+      const { fieldErrors, generalError: genError } = parseErrors(error);
+      setErrors(fieldErrors);
+      setGeneralError(genError);
+      scrollToTop();
     },
   });
 
@@ -82,23 +93,41 @@ export default function SupplierFormModal({ isOpen, onClose, supplier }: Supplie
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
       toast.success('Fournisseur modifié avec succès');
+      setErrors({});
+      setGeneralError(null);
       onClose();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la modification');
+      const { fieldErrors, generalError: genError } = parseErrors(error);
+      setErrors(fieldErrors);
+      setGeneralError(genError);
+      scrollToTop();
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Réinitialiser les erreurs
+    setErrors({});
+    setGeneralError(null);
+    
+    // Validation côté client
+    const clientErrors: Record<string, string> = {};
+    
     if (!formData.name.trim()) {
-      toast.error('Le nom du fournisseur est requis');
+      clientErrors.name = 'Le nom du fournisseur est requis';
+    }
+    
+    if (!user?.pharmacy_id) {
+      setGeneralError('Erreur : aucune pharmacie associée à votre compte');
       return;
     }
-
-    if (!user?.pharmacy_id) {
-      toast.error('Erreur : aucune pharmacie associée à votre compte');
+    
+    // Si erreurs de validation, les afficher et arrêter
+    if (Object.keys(clientErrors).length > 0) {
+      setErrors(clientErrors);
+      scrollToTop();
       return;
     }
 
@@ -142,6 +171,23 @@ export default function SupplierFormModal({ isOpen, onClose, supplier }: Supplie
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Affichage des erreurs générales */}
+        {generalError && (
+          <div className="mb-4 flex items-start gap-3 rounded-lg border-l-4 border-red-400 bg-red-50 p-4 text-red-700">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">{generalError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setGeneralError(null)}
+              className="flex-shrink-0 p-1 hover:bg-red-100 rounded"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Nom */}
           <div className="md:col-span-2">
@@ -149,11 +195,20 @@ export default function SupplierFormModal({ isOpen, onClose, supplier }: Supplie
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="input"
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+                if (errors.name) setErrors({ ...errors, name: '' });
+              }}
+              className={`input ${errors.name ? 'border-red-500 focus:ring-red-500' : ''}`}
               placeholder="Ex: PharmaDistri Guinée"
               required
             />
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {errors.name}
+              </p>
+            )}
           </div>
 
           {/* Contact */}
@@ -174,10 +229,19 @@ export default function SupplierFormModal({ isOpen, onClose, supplier }: Supplie
             <input
               type="tel"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="input"
+              onChange={(e) => {
+                setFormData({ ...formData, phone: e.target.value });
+                if (errors.phone) setErrors({ ...errors, phone: '' });
+              }}
+              className={`input ${errors.phone ? 'border-red-500 focus:ring-red-500' : ''}`}
               placeholder="+224 6XX XX XX XX"
             />
+            {errors.phone && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {errors.phone}
+              </p>
+            )}
           </div>
 
           {/* Email */}
@@ -186,10 +250,19 @@ export default function SupplierFormModal({ isOpen, onClose, supplier }: Supplie
             <input
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="input"
+              onChange={(e) => {
+                setFormData({ ...formData, email: e.target.value });
+                if (errors.email) setErrors({ ...errors, email: '' });
+              }}
+              className={`input ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
               placeholder="contact@fournisseur.com"
             />
+            {errors.email && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {errors.email}
+              </p>
+            )}
           </div>
 
           {/* Adresse */}

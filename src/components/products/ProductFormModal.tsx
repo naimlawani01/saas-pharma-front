@@ -5,7 +5,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { isFeatureEnabled, getBusinessConfig } from '@/config/businessConfig';
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle, X } from 'lucide-react';
+import { parseErrors, scrollToTop } from '@/utils/errorHandler';
 
 interface ProductFormData {
   name: string;
@@ -70,6 +71,8 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
   const showBarcode = isFeatureEnabled('barcode');
   
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
 
   // Charger les catégories
   const { data: categories } = useQuery({
@@ -102,6 +105,9 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
     } else if (isOpen) {
       setFormData(initialFormData);
     }
+    // Réinitialiser les erreurs quand on ouvre/ferme le modal
+    setErrors({});
+    setGeneralError(null);
   }, [isOpen, product]);
 
   // Mutation pour créer
@@ -113,10 +119,15 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       toast.success('Produit créé avec succès');
+      setErrors({});
+      setGeneralError(null);
       onClose();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la création');
+      const { fieldErrors, generalError: genError } = parseErrors(error);
+      setErrors(fieldErrors);
+      setGeneralError(genError);
+      scrollToTop();
     },
   });
 
@@ -129,27 +140,56 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       toast.success('Produit modifié avec succès');
+      setErrors({});
+      setGeneralError(null);
       onClose();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la modification');
+      const { fieldErrors, generalError: genError } = parseErrors(error);
+      setErrors(fieldErrors);
+      setGeneralError(genError);
+      scrollToTop();
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Réinitialiser les erreurs
+    setErrors({});
+    setGeneralError(null);
+    
+    // Validation côté client
+    const clientErrors: Record<string, string> = {};
+    
     if (!formData.name.trim()) {
-      toast.error(`Le nom du ${businessConfig.terminology.product.toLowerCase()} est requis`);
-      return;
+      clientErrors.name = `Le nom du ${businessConfig.terminology.product.toLowerCase()} est requis`;
     }
     if (formData.selling_price <= 0) {
-      toast.error('Le prix de vente doit être supérieur à 0');
-      return;
+      clientErrors.selling_price = 'Le prix de vente doit être supérieur à 0';
+    }
+    if (formData.quantity < 0) {
+      clientErrors.quantity = 'La quantité ne peut pas être négative';
+    }
+    if (formData.min_quantity < 0) {
+      clientErrors.min_quantity = 'Le stock minimum ne peut pas être négatif';
+    }
+    if (formData.purchase_price < 0) {
+      clientErrors.purchase_price = 'Le prix d\'achat ne peut pas être négatif';
     }
     
     if (!user?.pharmacy_id) {
-      toast.error(`Erreur : aucun(e) ${businessConfig.terminology.business.toLowerCase()} associé(e) à votre compte`);
+      setGeneralError(`Erreur : aucun(e) ${businessConfig.terminology.business.toLowerCase()} associé(e) à votre compte`);
+      return;
+    }
+    
+    // Si erreurs de validation, les afficher et arrêter
+    if (Object.keys(clientErrors).length > 0) {
+      setErrors(clientErrors);
+      const modalContent = document.querySelector('.modal-content');
+      if (modalContent) {
+        modalContent.scrollTop = 0;
+      }
       return;
     }
 
@@ -185,6 +225,23 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Affichage des erreurs générales */}
+        {generalError && (
+          <div className="mb-4 flex items-start gap-3 rounded-lg border-l-4 border-red-400 bg-red-50 p-4 text-red-700">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">{generalError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setGeneralError(null)}
+              className="flex-shrink-0 p-1 hover:bg-red-100 rounded"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Nom */}
           <div className="md:col-span-2">
@@ -192,11 +249,20 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="input"
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+                if (errors.name) setErrors({ ...errors, name: '' });
+              }}
+              className={`input ${errors.name ? 'border-red-500 focus:ring-red-500' : ''}`}
               placeholder={`Ex: ${businessConfig.id === 'pharmacy' ? 'Paracétamol 500mg' : 'Nom du produit'}`}
               required
             />
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {errors.name}
+              </p>
+            )}
           </div>
 
           {/* Description */}
@@ -217,10 +283,19 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
             <input
               type="text"
               value={formData.barcode || ''}
-              onChange={(e) => setFormData({ ...formData, barcode: e.target.value || null })}
-              className="input"
+              onChange={(e) => {
+                setFormData({ ...formData, barcode: e.target.value || null });
+                if (errors.barcode) setErrors({ ...errors, barcode: '' });
+              }}
+              className={`input ${errors.barcode ? 'border-red-500 focus:ring-red-500' : ''}`}
               placeholder="1234567890123"
             />
+            {errors.barcode && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {errors.barcode}
+              </p>
+            )}
           </div>
           )}
 
@@ -230,10 +305,19 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
             <input
               type="text"
               value={formData.sku || ''}
-              onChange={(e) => setFormData({ ...formData, sku: e.target.value || null })}
-              className="input"
+              onChange={(e) => {
+                setFormData({ ...formData, sku: e.target.value || null });
+                if (errors.sku) setErrors({ ...errors, sku: '' });
+              }}
+              className={`input ${errors.sku ? 'border-red-500 focus:ring-red-500' : ''}`}
               placeholder="REF001"
             />
+            {errors.sku && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {errors.sku}
+              </p>
+            )}
           </div>
 
           {/* Catégorie */}
@@ -271,11 +355,20 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
             <input
               type="number"
               value={formData.purchase_price}
-              onChange={(e) => setFormData({ ...formData, purchase_price: parseFloat(e.target.value) || 0 })}
-              className="input"
+              onChange={(e) => {
+                setFormData({ ...formData, purchase_price: parseFloat(e.target.value) || 0 });
+                if (errors.purchase_price) setErrors({ ...errors, purchase_price: '' });
+              }}
+              className={`input ${errors.purchase_price ? 'border-red-500 focus:ring-red-500' : ''}`}
               min="0"
               step="100"
             />
+            {errors.purchase_price && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {errors.purchase_price}
+              </p>
+            )}
           </div>
 
           {/* Prix de vente */}
@@ -284,12 +377,21 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
             <input
               type="number"
               value={formData.selling_price}
-              onChange={(e) => setFormData({ ...formData, selling_price: parseFloat(e.target.value) || 0 })}
-              className="input"
+              onChange={(e) => {
+                setFormData({ ...formData, selling_price: parseFloat(e.target.value) || 0 });
+                if (errors.selling_price) setErrors({ ...errors, selling_price: '' });
+              }}
+              className={`input ${errors.selling_price ? 'border-red-500 focus:ring-red-500' : ''}`}
               min="0"
               step="100"
               required
             />
+            {errors.selling_price && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {errors.selling_price}
+              </p>
+            )}
           </div>
 
           {/* Quantité */}
@@ -298,10 +400,19 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
             <input
               type="number"
               value={formData.quantity}
-              onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
-              className="input"
+              onChange={(e) => {
+                setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 });
+                if (errors.quantity) setErrors({ ...errors, quantity: '' });
+              }}
+              className={`input ${errors.quantity ? 'border-red-500 focus:ring-red-500' : ''}`}
               min="0"
             />
+            {errors.quantity && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {errors.quantity}
+              </p>
+            )}
           </div>
 
           {/* Quantité minimum */}
@@ -310,10 +421,19 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
             <input
               type="number"
               value={formData.min_quantity}
-              onChange={(e) => setFormData({ ...formData, min_quantity: parseInt(e.target.value) || 0 })}
-              className="input"
+              onChange={(e) => {
+                setFormData({ ...formData, min_quantity: parseInt(e.target.value) || 0 });
+                if (errors.min_quantity) setErrors({ ...errors, min_quantity: '' });
+              }}
+              className={`input ${errors.min_quantity ? 'border-red-500 focus:ring-red-500' : ''}`}
               min="0"
             />
+            {errors.min_quantity && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {errors.min_quantity}
+              </p>
+            )}
           </div>
 
           {/* Dates de fabrication et expiration - conditionnelles */}

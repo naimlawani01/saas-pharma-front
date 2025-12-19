@@ -9,11 +9,14 @@ import {
   Trash2, 
   RefreshCw,
   Package,
+  AlertCircle,
+  X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Loader2 } from 'lucide-react';
+import { parseErrors, scrollToTop } from '@/utils/errorHandler';
 
 interface Category {
   id: number;
@@ -31,6 +34,8 @@ export default function CategoriesPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [formGeneralError, setFormGeneralError] = useState<string | null>(null);
 
   // Récupérer les catégories
   const { data: categories, isLoading, refetch, isFetching } = useQuery({
@@ -56,11 +61,16 @@ export default function CategoriesPage() {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['products'] }); // Invalider aussi les produits
       toast.success(selectedCategory ? 'Catégorie modifiée' : 'Catégorie créée');
+      setFormErrors({});
+      setFormGeneralError(null);
       setShowFormModal(false);
       setSelectedCategory(null);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde');
+      const { fieldErrors, generalError } = parseErrors(error);
+      setFormErrors(fieldErrors);
+      setFormGeneralError(generalError);
+      scrollToTop();
     },
   });
 
@@ -83,11 +93,15 @@ export default function CategoriesPage() {
 
   const handleAdd = () => {
     setSelectedCategory(null);
+    setFormErrors({});
+    setFormGeneralError(null);
     setShowFormModal(true);
   };
 
   const handleEdit = (category: Category) => {
     setSelectedCategory(category);
+    setFormErrors({});
+    setFormGeneralError(null);
     setShowFormModal(true);
   };
 
@@ -233,10 +247,18 @@ export default function CategoriesPage() {
         onClose={() => {
           setShowFormModal(false);
           setSelectedCategory(null);
+          setFormErrors({});
+          setFormGeneralError(null);
         }}
         category={selectedCategory}
         onSave={(data) => saveMutation.mutate(data)}
         isLoading={saveMutation.isPending}
+        errors={formErrors}
+        generalError={formGeneralError}
+        onClearErrors={() => {
+          setFormErrors({});
+          setFormGeneralError(null);
+        }}
       />
 
       {/* Delete Confirm */}
@@ -264,12 +286,18 @@ function CategoryFormModal({
   category,
   onSave,
   isLoading,
+  errors,
+  generalError,
+  onClearErrors,
 }: {
   isOpen: boolean;
   onClose: () => void;
   category: Category | null;
   onSave: (data: { name: string; description?: string | null }) => void;
   isLoading: boolean;
+  errors?: Record<string, string>;
+  generalError?: string | null;
+  onClearErrors?: () => void;
 }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -287,10 +315,19 @@ function CategoryFormModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (onClearErrors) onClearErrors();
+    
+    // Validation côté client
+    const clientErrors: Record<string, string> = {};
     if (!name.trim()) {
-      toast.error('Le nom de la catégorie est requis');
+      clientErrors.name = 'Le nom de la catégorie est requis';
+    }
+    
+    if (Object.keys(clientErrors).length > 0) {
+      // Les erreurs seront gérées par le parent
       return;
     }
+    
     onSave({
       name: name.trim(),
       description: description.trim() || null,
@@ -305,16 +342,46 @@ function CategoryFormModal({
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Affichage des erreurs générales */}
+        {generalError && (
+          <div className="mb-4 flex items-start gap-3 rounded-lg border-l-4 border-red-400 bg-red-50 p-4 text-red-700">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">{generalError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={onClearErrors}
+              className="flex-shrink-0 p-1 hover:bg-red-100 rounded"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         <div>
           <label className="label">Nom de la catégorie *</label>
           <input
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="input"
+            onChange={(e) => {
+              setName(e.target.value);
+              if (errors?.name && onClearErrors) {
+                const newErrors = { ...errors };
+                delete newErrors.name;
+                onClearErrors();
+              }
+            }}
+            className={`input ${errors?.name ? 'border-red-500 focus:ring-red-500' : ''}`}
             placeholder="Ex: Médicaments, Compléments alimentaires..."
             required
           />
+          {errors?.name && (
+            <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+              <AlertCircle className="h-4 w-4" />
+              {errors.name}
+            </p>
+          )}
         </div>
 
         <div>

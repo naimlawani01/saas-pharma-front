@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
@@ -13,6 +13,8 @@ import {
   Edit,
   Trash2,
   Key,
+  AlertCircle,
+  X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
@@ -20,6 +22,7 @@ import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
 import { Loader2 } from 'lucide-react';
+import { parseErrors, scrollToTop } from '@/utils/errorHandler';
 
 interface User {
   id: number;
@@ -387,9 +390,11 @@ function UserFormModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: ()
     is_active: true,
     pharmacy_id: currentUser?.pharmacy_id,
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
 
-  useState(() => {
-    if (user) {
+  useEffect(() => {
+    if (isOpen && user) {
       setFormData({
         email: user.email,
         username: user.username,
@@ -399,7 +404,7 @@ function UserFormModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: ()
         is_active: user.is_active,
         pharmacy_id: user.pharmacy_id,
       });
-    } else {
+    } else if (isOpen) {
       setFormData({
         email: '',
         username: '',
@@ -410,7 +415,10 @@ function UserFormModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: ()
         pharmacy_id: currentUser?.pharmacy_id,
       });
     }
-  });
+    // Réinitialiser les erreurs quand on ouvre/ferme le modal
+    setErrors({});
+    setGeneralError(null);
+  }, [isOpen, user, currentUser?.pharmacy_id]);
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -419,10 +427,15 @@ function UserFormModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: ()
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('Utilisateur créé avec succès');
+      setErrors({});
+      setGeneralError(null);
       onClose();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la création');
+      const { fieldErrors, generalError: genError } = parseErrors(error);
+      setErrors(fieldErrors);
+      setGeneralError(genError);
+      scrollToTop();
     },
   });
 
@@ -434,23 +447,42 @@ function UserFormModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: ()
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('Utilisateur modifié');
+      setErrors({});
+      setGeneralError(null);
       onClose();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la modification');
+      const { fieldErrors, generalError: genError } = parseErrors(error);
+      setErrors(fieldErrors);
+      setGeneralError(genError);
+      scrollToTop();
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.username) {
-      toast.error('Email et nom d\'utilisateur requis');
-      return;
+    // Réinitialiser les erreurs
+    setErrors({});
+    setGeneralError(null);
+    
+    // Validation côté client
+    const clientErrors: Record<string, string> = {};
+    
+    if (!formData.email.trim()) {
+      clientErrors.email = 'L\'email est requis';
+    }
+    if (!formData.username.trim()) {
+      clientErrors.username = 'Le nom d\'utilisateur est requis';
+    }
+    if (!isEditing && !formData.password.trim()) {
+      clientErrors.password = 'Le mot de passe est requis pour un nouvel utilisateur';
     }
     
-    if (!isEditing && !formData.password) {
-      toast.error('Mot de passe requis pour un nouvel utilisateur');
+    // Si erreurs de validation, les afficher et arrêter
+    if (Object.keys(clientErrors).length > 0) {
+      setErrors(clientErrors);
+      scrollToTop();
       return;
     }
 
@@ -466,15 +498,41 @@ function UserFormModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: ()
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={isEditing ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'} size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Affichage des erreurs générales */}
+        {generalError && (
+          <div className="mb-4 flex items-start gap-3 rounded-lg border-l-4 border-red-400 bg-red-50 p-4 text-red-700">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">{generalError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setGeneralError(null)}
+              className="flex-shrink-0 p-1 hover:bg-red-100 rounded"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         <div>
           <label className="label">Nom complet</label>
           <input
             type="text"
             value={formData.full_name}
-            onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-            className="input"
+            onChange={(e) => {
+              setFormData({ ...formData, full_name: e.target.value });
+              if (errors.full_name) setErrors({ ...errors, full_name: '' });
+            }}
+            className={`input ${errors.full_name ? 'border-red-500 focus:ring-red-500' : ''}`}
             placeholder="Jean Dupont"
           />
+          {errors.full_name && (
+            <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+              <AlertCircle className="h-4 w-4" />
+              {errors.full_name}
+            </p>
+          )}
         </div>
 
         <div>
@@ -482,11 +540,20 @@ function UserFormModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: ()
           <input
             type="email"
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="input"
+            onChange={(e) => {
+              setFormData({ ...formData, email: e.target.value });
+              if (errors.email) setErrors({ ...errors, email: '' });
+            }}
+            className={`input ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
             placeholder="email@exemple.com"
             required
           />
+          {errors.email && (
+            <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+              <AlertCircle className="h-4 w-4" />
+              {errors.email}
+            </p>
+          )}
         </div>
 
         <div>
@@ -494,11 +561,20 @@ function UserFormModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: ()
           <input
             type="text"
             value={formData.username}
-            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-            className="input"
+            onChange={(e) => {
+              setFormData({ ...formData, username: e.target.value });
+              if (errors.username) setErrors({ ...errors, username: '' });
+            }}
+            className={`input ${errors.username ? 'border-red-500 focus:ring-red-500' : ''}`}
             placeholder="jean.dupont"
             required
           />
+          {errors.username && (
+            <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+              <AlertCircle className="h-4 w-4" />
+              {errors.username}
+            </p>
+          )}
         </div>
 
         {!isEditing && (
@@ -507,11 +583,20 @@ function UserFormModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: ()
             <input
               type="password"
               value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="input"
+              onChange={(e) => {
+                setFormData({ ...formData, password: e.target.value });
+                if (errors.password) setErrors({ ...errors, password: '' });
+              }}
+              className={`input ${errors.password ? 'border-red-500 focus:ring-red-500' : ''}`}
               placeholder="••••••••"
               required={!isEditing}
             />
+            {errors.password && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {errors.password}
+              </p>
+            )}
           </div>
         )}
 

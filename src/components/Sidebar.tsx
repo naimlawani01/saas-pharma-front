@@ -22,7 +22,6 @@ import {
   FileText,
   Tag,
   Cloud,
-  Store,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -96,8 +95,24 @@ export default function Sidebar() {
           {/* Header */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
             <div className={clsx('flex items-center gap-3', sidebarCollapsed && 'justify-center w-full')}>
-              <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Store className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="w-full h-full">
+                  <defs>
+                    <linearGradient id="sidebarLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" style={{stopColor:"#6366F1",stopOpacity:1}} />
+                      <stop offset="100%" style={{stopColor:"#8B5CF6",stopOpacity:1}} />
+                    </linearGradient>
+                  </defs>
+                  <rect width="100" height="100" rx="22" fill="url(#sidebarLogoGrad)"/>
+                  <path 
+                    d="M 30 25 L 30 75 L 70 75 L 70 60 L 50 60 L 50 50 L 65 50 L 65 35 L 50 35 L 50 25 Z" 
+                    fill="white" 
+                    stroke="white" 
+                    strokeWidth="2" 
+                    strokeLinejoin="round" 
+                    strokeLinecap="round"
+                  />
+                </svg>
               </div>
               {!sidebarCollapsed && (
                 <div>

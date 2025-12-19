@@ -4,8 +4,9 @@ import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
-import { Loader2, Trash2, Search } from 'lucide-react';
+import { Loader2, Trash2, Search, AlertCircle, X } from 'lucide-react';
 import { Prescription, PrescriptionCreate } from '@/types/prescription';
+import { parseErrors, scrollToTop } from '@/utils/errorHandler';
 
 interface PrescriptionItemForm {
   product_id: number;
@@ -64,6 +65,8 @@ export default function PrescriptionFormModal({
 
   const [productSearch, setProductSearch] = useState('');
   const [showProductSearch, setShowProductSearch] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
 
   // Récupérer les clients
   const { data: customers } = useQuery({
@@ -119,10 +122,15 @@ export default function PrescriptionFormModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['prescriptions'] });
       toast.success('Prescription créée avec succès');
+      setErrors({});
+      setGeneralError(null);
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la création');
+      const { fieldErrors, generalError: genError } = parseErrors(error);
+      setErrors(fieldErrors);
+      setGeneralError(genError);
+      scrollToTop();
     },
   });
 
@@ -133,28 +141,46 @@ export default function PrescriptionFormModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['prescriptions'] });
       toast.success('Prescription modifiée avec succès');
+      setErrors({});
+      setGeneralError(null);
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la modification');
+      const { fieldErrors, generalError: genError } = parseErrors(error);
+      setErrors(fieldErrors);
+      setGeneralError(genError);
+      scrollToTop();
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Réinitialiser les erreurs
+    setErrors({});
+    setGeneralError(null);
+
+    // Validation côté client
+    const clientErrors: Record<string, string> = {};
+
     if (!formData.customer_id) {
-      toast.error('Veuillez sélectionner un client');
-      return;
+      clientErrors.customer_id = 'Veuillez sélectionner un client';
     }
 
     if (!formData.doctor_name.trim()) {
-      toast.error('Le nom du médecin est requis');
-      return;
+      clientErrors.doctor_name = 'Le nom du médecin est requis';
     }
 
     if (items.length === 0) {
-      toast.error('Veuillez ajouter au moins un produit');
+      setGeneralError('Veuillez ajouter au moins un produit à la prescription');
+      scrollToTop();
+      return;
+    }
+
+    // Si erreurs de validation, les afficher et arrêter
+    if (Object.keys(clientErrors).length > 0) {
+      setErrors(clientErrors);
+      scrollToTop();
       return;
     }
 
@@ -199,13 +225,33 @@ export default function PrescriptionFormModal({
       size="xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Affichage des erreurs générales */}
+        {generalError && (
+          <div className="mb-4 flex items-start gap-3 rounded-lg border-l-4 border-red-400 bg-red-50 p-4 text-red-700">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">{generalError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setGeneralError(null)}
+              className="flex-shrink-0 p-1 hover:bg-red-100 rounded"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         {/* Informations client */}
         <div>
           <label className="label">Client *</label>
           <select
             value={formData.customer_id}
-            onChange={(e) => setFormData({ ...formData, customer_id: parseInt(e.target.value) })}
-            className="input"
+            onChange={(e) => {
+              setFormData({ ...formData, customer_id: parseInt(e.target.value) });
+              if (errors.customer_id) setErrors({ ...errors, customer_id: '' });
+            }}
+            className={`input ${errors.customer_id ? 'border-red-500 focus:ring-red-500' : ''}`}
             required
             disabled={isEditing}
           >
@@ -217,6 +263,12 @@ export default function PrescriptionFormModal({
               </option>
             ))}
           </select>
+          {errors.customer_id && (
+            <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+              <AlertCircle className="h-4 w-4" />
+              {errors.customer_id}
+            </p>
+          )}
         </div>
 
         {/* Informations médecin */}
@@ -226,10 +278,19 @@ export default function PrescriptionFormModal({
             <input
               type="text"
               value={formData.doctor_name}
-              onChange={(e) => setFormData({ ...formData, doctor_name: e.target.value })}
-              className="input"
+              onChange={(e) => {
+                setFormData({ ...formData, doctor_name: e.target.value });
+                if (errors.doctor_name) setErrors({ ...errors, doctor_name: '' });
+              }}
+              className={`input ${errors.doctor_name ? 'border-red-500 focus:ring-red-500' : ''}`}
               required
             />
+            {errors.doctor_name && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {errors.doctor_name}
+              </p>
+            )}
           </div>
           <div>
             <label className="label">Spécialité</label>
