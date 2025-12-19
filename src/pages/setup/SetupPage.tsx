@@ -309,7 +309,7 @@ export default function SetupPage() {
                   step >= s 
                     ? 'bg-white text-gray-800 shadow-lg' 
                     : 'bg-white/20 text-white/50'
-                }`}>
+            }`}>
                   {step > s ? <CheckCircle className="w-5 h-5 text-green-600" /> : s + 1}
                 </div>
                 {s < 3 && (
@@ -317,10 +317,10 @@ export default function SetupPage() {
                     step > s ? 'bg-white' : 'bg-white/20'
                   }`} />
                 )}
-              </div>
+            </div>
             ))}
-          </div>
-        </div>
+            </div>
+            </div>
         
         {/* Labels des étapes */}
         <div className="flex justify-center mb-6">
@@ -774,16 +774,16 @@ export default function SetupPage() {
                 <div className="space-y-2 text-sm">
                   <p className="text-gray-700 flex items-center gap-2">
                     <Mail className="w-4 h-4 text-gray-400" />
-                    <strong>Email :</strong> {adminData.email}
-                  </p>
+                  <strong>Email :</strong> {adminData.email}
+                </p>
                   <p className="text-gray-700 flex items-center gap-2">
                     <User className="w-4 h-4 text-gray-400" />
                     <strong>Utilisateur :</strong> {adminData.username}
-                  </p>
+                </p>
                   <p className="text-green-700 flex items-center gap-2 pt-2">
-                    <Cloud className="w-4 h-4" />
+                  <Cloud className="w-4 h-4" />
                     <strong>Cloud :</strong> ✅ Compte synchronisé
-                  </p>
+                </p>
                 </div>
               </div>
               <div className="mt-4 flex justify-center">

@@ -162,7 +162,7 @@ export default function DashboardPage() {
             <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-4xl shadow-inner">
               {businessTypeConfig.icon}
             </div>
-            <div>
+        <div>
               <h1 className="text-2xl sm:text-3xl font-display font-bold">
                 {pharmacyInfo?.name || 'Tableau de bord'}
               </h1>
@@ -175,15 +175,15 @@ export default function DashboardPage() {
                 )}
               </div>
             </div>
-          </div>
-          <button
-            onClick={handleRefresh}
-            disabled={isFetching}
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={isFetching}
             className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all self-start sm:self-center"
-          >
-            <RefreshCw className={`w-5 h-5 ${isFetching ? 'animate-spin' : ''}`} />
-            Actualiser
-          </button>
+        >
+          <RefreshCw className={`w-5 h-5 ${isFetching ? 'animate-spin' : ''}`} />
+          Actualiser
+        </button>
         </div>
       </div>
 
