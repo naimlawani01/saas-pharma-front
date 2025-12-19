@@ -53,7 +53,6 @@ export default function ProductsPage() {
   const queryClient = useQueryClient();
   const businessConfig = getBusinessConfig();
   const showExpiryDates = isFeatureEnabled('expiryDates');
-  const showPrescriptions = isFeatureEnabled('prescriptions');
   
   const [search, setSearch] = useState('');
   const [showLowStock, setShowLowStock] = useState(false);
