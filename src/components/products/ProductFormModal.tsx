@@ -504,7 +504,12 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
             className="btn-primary flex items-center gap-2"
           >
             {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {isEditing ? 'Enregistrer' : `Créer le ${businessConfig.terminology.product.toLowerCase()}`}
+            {isEditing ? 'Enregistrer' : (() => {
+              const productName = businessConfig.terminology.product.toLowerCase();
+              // Gérer l'élision pour les mots commençant par une voyelle ou 'h'
+              const article = /^[aeiouh]/.test(productName) ? "l'" : "le ";
+              return `Créer ${article}${productName}`;
+            })()}
           </button>
         </div>
       </form>
