@@ -118,7 +118,7 @@ export default function SupplierFormModal({ isOpen, onClose, supplier }: Supplie
     if (!formData.name.trim()) {
       clientErrors.name = 'Le nom du fournisseur est requis';
     }
-    
+
     if (!user?.pharmacy_id) {
       setGeneralError('Erreur : aucune pharmacie associée à votre compte');
       return;

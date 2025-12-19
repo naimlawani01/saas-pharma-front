@@ -124,7 +124,7 @@ export default function CustomerFormModal({ isOpen, onClose, customer }: Custome
     if (!formData.last_name.trim()) {
       clientErrors.last_name = 'Le nom est requis';
     }
-    
+
     if (!user?.pharmacy_id) {
       setGeneralError('Erreur : aucune pharmacie associée à votre compte');
       return;

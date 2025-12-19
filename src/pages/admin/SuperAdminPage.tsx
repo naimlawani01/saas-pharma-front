@@ -77,6 +77,8 @@ export default function SuperAdminPage() {
   const [search, setSearch] = useState('');
   const [filterActive, setFilterActive] = useState<boolean | null>(null);
   const [filterBusinessType, setFilterBusinessType] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'businesses' | 'users'>('businesses');
+  const [userSearch, setUserSearch] = useState('');
   
   // Modal states
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
@@ -126,6 +128,19 @@ export default function SuperAdminPage() {
       const response = await api.get(`/admin/pharmacies?${params}`);
       return response.data as Business[];
     },
+  });
+
+  // Récupérer les utilisateurs
+  const { data: users, isLoading: isLoadingUsers, refetch: refetchUsers } = useQuery({
+    queryKey: ['admin-users', userSearch],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (userSearch) params.append('search', userSearch);
+      params.append('limit', '1000'); // Récupérer tous les utilisateurs
+      const response = await api.get(`/admin/users?${params}`);
+      return response.data;
+    },
+    enabled: activeTab === 'users',
   });
 
   // Toggle activation
@@ -259,7 +274,42 @@ export default function SuperAdminPage() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="bg-white rounded-xl shadow-md border border-gray-100 p-1">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab('businesses')}
+            className={clsx(
+              'flex-1 px-6 py-3 rounded-lg font-semibold transition-all',
+              activeTab === 'businesses'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-50'
+            )}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <Store className="w-5 h-5" />
+              Commerces
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('users')}
+            className={clsx(
+              'flex-1 px-6 py-3 rounded-lg font-semibold transition-all',
+              activeTab === 'users'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-50'
+            )}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <Users className="w-5 h-5" />
+              Utilisateurs
+            </div>
+          </button>
+        </div>
+      </div>
+
       {/* Filters - Design amélioré */}
+      {activeTab === 'businesses' && (
       <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4">
         <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row gap-4">
@@ -349,8 +399,36 @@ export default function SuperAdminPage() {
           </div>
         </div>
       </div>
+      )}
+
+      {/* Users Search */}
+      {activeTab === 'users' && (
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                placeholder="Rechercher un utilisateur (nom, email, username)..."
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+              />
+            </div>
+            <button
+              onClick={() => refetchUsers()}
+              disabled={isLoadingUsers}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <RefreshCw className={`w-5 h-5 ${isLoadingUsers ? 'animate-spin' : ''}`} />
+              Actualiser
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Commerces List - Design amélioré */}
+      {activeTab === 'businesses' && (
       <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
@@ -467,6 +545,147 @@ export default function SuperAdminPage() {
           </div>
         )}
       </div>
+      )}
+
+      {/* Users Search */}
+      {activeTab === 'users' && (
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                placeholder="Rechercher un utilisateur (nom, email, username)..."
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+              />
+            </div>
+            <button
+              onClick={() => refetchUsers()}
+              disabled={isLoadingUsers}
+              className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium flex items-center gap-2 transition-all disabled:opacity-50"
+            >
+              <RefreshCw className={clsx('w-5 h-5', isLoadingUsers && 'animate-spin')} />
+              Actualiser
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Users List */}
+      {activeTab === 'users' && (
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+          {isLoadingUsers ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+            </div>
+          ) : users && users.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gradient-to-r from-purple-50 to-purple-100">
+                  <tr className="text-left text-sm">
+                    <th className="px-6 py-4 font-semibold text-gray-700">Utilisateur</th>
+                    <th className="px-6 py-4 font-semibold text-gray-700">Email</th>
+                    <th className="px-6 py-4 font-semibold text-gray-700">Rôle</th>
+                    <th className="px-6 py-4 font-semibold text-gray-700">Commerce</th>
+                    <th className="px-6 py-4 font-semibold text-gray-700">Dernière connexion</th>
+                    <th className="px-6 py-4 font-semibold text-gray-700">Statut</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {users.map((user: any) => {
+                    const lastLogin = user.last_login 
+                      ? new Date(user.last_login)
+                      : null;
+                    const isRecentlyActive = lastLogin && 
+                      (Date.now() - lastLogin.getTime()) < 24 * 60 * 60 * 1000; // Moins de 24h
+                    
+                    return (
+                      <tr key={user.id} className="hover:bg-purple-50/50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold shadow-md">
+                              {user.full_name ? user.full_name.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900">{user.full_name || user.username}</p>
+                              <p className="text-sm text-gray-500">@{user.username}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-gray-700">{user.email}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={clsx(
+                            'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium',
+                            user.role === 'admin' 
+                              ? 'bg-purple-100 text-purple-800'
+                              : user.role === 'pharmacist'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-gray-100 text-gray-800'
+                          )}>
+                            {user.role === 'admin' ? 'Admin' : user.role === 'pharmacist' ? 'Pharmacien' : 'Assistant'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-gray-700">{user.pharmacy_name || '-'}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          {lastLogin ? (
+                            <div className="flex items-center gap-2">
+                              <div className={clsx(
+                                'w-2 h-2 rounded-full',
+                                isRecentlyActive ? 'bg-green-500' : 'bg-gray-400'
+                              )} />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                  {lastLogin.toLocaleDateString('fr-FR', { 
+                                    day: 'numeric', 
+                                    month: 'short', 
+                                    year: 'numeric' 
+                                  })}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {lastLogin.toLocaleTimeString('fr-FR', { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 italic">Jamais connecté</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={clsx(
+                            'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium',
+                            user.is_active
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          )}>
+                            {user.is_active ? 'Actif' : 'Inactif'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-500 p-8">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <Users className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="text-lg font-medium text-gray-700 mb-2">Aucun utilisateur trouvé</p>
+              <p className="text-sm text-gray-500">Aucun utilisateur ne correspond à votre recherche</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Onboarding Modal */}
       <OnboardingModal
