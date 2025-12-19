@@ -462,29 +462,44 @@ export default function ProductFormModal({ isOpen, onClose, product }: ProductFo
           )}
 
           {/* Options */}
-          <div className="md:col-span-2 flex flex-wrap gap-6">
-            {/* Option ordonnance - uniquement pour les pharmacies */}
-            {showPrescriptionField && (
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.is_prescription_required}
-                onChange={(e) => setFormData({ ...formData, is_prescription_required: e.target.checked })}
-                className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              />
-              <span className="text-sm text-gray-700">Nécessite une ordonnance</span>
-            </label>
-            )}
+          <div className="md:col-span-2 space-y-4">
+            {/* Option ordonnance - toujours visible */}
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.is_prescription_required}
+                  onChange={(e) => setFormData({ ...formData, is_prescription_required: e.target.checked })}
+                  className="w-5 h-5 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-orange-600" />
+                    Nécessite une ordonnance
+                  </span>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {showPrescriptionField 
+                      ? "Cochez cette case si ce produit nécessite une prescription médicale"
+                      : "Cochez cette case si ce produit nécessite normalement une ordonnance (le pharmacien pourra quand même valider la vente)"}
+                  </p>
+                </div>
+              </label>
+            </div>
 
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.is_active}
-                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              />
-              <span className="text-sm text-gray-700">{businessConfig.terminology.product} actif</span>
-            </label>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.is_active}
+                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                  className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-900">{businessConfig.terminology.product} actif</span>
+                  <p className="text-xs text-gray-600 mt-1">Désactivez pour masquer ce produit des ventes</p>
+                </div>
+              </label>
+            </div>
           </div>
         </div>
 

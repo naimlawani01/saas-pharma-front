@@ -366,7 +366,7 @@ export default function SuperAdminPage() {
             <RefreshCw className={clsx('w-5 h-5', isFetching && 'animate-spin')} />
             Actualiser
           </button>
-          </div>
+        </div>
           
           {/* Filtre par type d'activité */}
           <div className="flex flex-wrap gap-2">
@@ -396,7 +396,7 @@ export default function SuperAdminPage() {
                 {type.name}
               </button>
             ))}
-          </div>
+      </div>
         </div>
       </div>
       )}

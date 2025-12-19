@@ -314,6 +314,7 @@ export default function ProductsPage() {
                   <th className="px-6 py-4 font-medium">Prix d'achat</th>
                   <th className="px-6 py-4 font-medium">Prix de vente</th>
                   {showExpiryDates && <th className="px-6 py-4 font-medium">Expiration</th>}
+                  <th className="px-6 py-4 font-medium">Ordonnance</th>
                   <th className="px-6 py-4 font-medium">Statut</th>
                   <th className="px-6 py-4 font-medium w-32">Actions</th>
                 </tr>
@@ -326,13 +327,18 @@ export default function ProductsPage() {
                         <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
                           <Package className="w-5 h-5 text-primary-600" />
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{product.name}</p>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-gray-900">{product.name}</p>
+                            {product.is_prescription_required && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
+                                <AlertTriangle className="w-3 h-3" />
+                                Ordonnance
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 text-sm text-gray-500">
                             {product.barcode && <span>{product.barcode}</span>}
-                            {showPrescriptions && product.is_prescription_required && (
-                              <span className="badge badge-warning text-xs">Ordonnance</span>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -374,6 +380,16 @@ export default function ProductsPage() {
                       )}
                     </td>
                     )}
+                    <td className="px-6 py-4">
+                      {product.is_prescription_required ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          Oui
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-sm">Non</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4">
                       <span className={clsx(
                         'badge',

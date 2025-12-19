@@ -27,6 +27,7 @@ import {
   Wallet,
   Check,
 } from 'lucide-react';
+import { parseErrors } from '@/utils/errorHandler';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
 import { isOfflineError } from '@/utils/offlineHandler';
@@ -39,6 +40,7 @@ interface Product {
   name: string;
   selling_price: number;
   quantity: number;
+  is_prescription_required?: boolean;
 }
 
 interface CartItem {
@@ -92,6 +94,7 @@ export default function NewSalePage() {
   const [barcodeScannerEnabled, setBarcodeScannerEnabled] = useState(true);
   const [lastScannedBarcode, setLastScannedBarcode] = useState<string | null>(null);
   const [selectedPrescriptionId, setSelectedPrescriptionId] = useState<number | null>(null);
+  const [saleError, setSaleError] = useState<string | null>(null);
 
   // Rechercher les clients
   const { data: customers } = useQuery({
@@ -281,6 +284,7 @@ export default function NewSalePage() {
       setCreatedSale(saleWithItems);
       setShowReceipt(true);
       toast.success('Vente enregistrée avec succès !');
+      setSaleError(null); // Réinitialiser l'erreur en cas de succès
     },
     onError: (error: any) => {
       if (isOfflineError(error)) {
@@ -323,7 +327,11 @@ export default function NewSalePage() {
           setUseMultiplePayments(false);
         }, 1000);
       } else {
-        toast.error(error.response?.data?.detail || 'Erreur lors de la vente');
+        // Parser les erreurs pour affichage professionnel
+        const { generalError } = parseErrors(error);
+        setSaleError(generalError || error.response?.data?.detail || 'Erreur lors de la vente');
+        // Scroll vers le haut pour voir l'erreur
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     },
   });
@@ -413,6 +421,18 @@ export default function NewSalePage() {
     } else {
       setCart([...cart, { product, quantity: 1 }]);
     }
+    
+    // Avertissement informatif si le produit nécessite une ordonnance
+    if (product.is_prescription_required && !selectedPrescriptionId) {
+      toast(
+        `Note: ${product.name} nécessite normalement une ordonnance. Vous pouvez continuer la vente.`,
+        {
+          icon: 'ℹ️',
+          duration: 4000,
+        }
+      );
+    }
+    
     setSearch('');
   };
 
@@ -480,47 +500,50 @@ export default function NewSalePage() {
   };
 
   const handleSubmit = () => {
+    // Réinitialiser l'erreur
+    setSaleError(null);
+    
     if (cart.length === 0) {
-      toast.error('Ajoutez des produits au panier');
+      setSaleError('Ajoutez des produits au panier');
       return;
     }
     
     // Vérifier si une caisse est ouverte
     if (!isCashOpen) {
-      toast.error('Vous devez ouvrir une caisse avant de pouvoir effectuer une vente');
+      setSaleError('Vous devez ouvrir une caisse avant de pouvoir effectuer une vente');
       return;
     }
     
     // Valider les paiements multiples si activés
     if (useMultiplePayments) {
       if (paymentBreakdowns.length === 0) {
-        toast.error('Ajoutez au moins un paiement');
+        setSaleError('Ajoutez au moins un paiement');
         return;
       }
       
       // Vérifier que tous les paiements ont un montant
       const invalidPayments = paymentBreakdowns.filter(p => !p.amount || p.amount <= 0);
       if (invalidPayments.length > 0) {
-        toast.error('Tous les paiements doivent avoir un montant valide');
+        setSaleError('Tous les paiements doivent avoir un montant valide');
         return;
       }
       
       // Vérifier que la somme correspond
       if (!isValidPayment) {
-        toast.error(`La somme des paiements (${formatCurrency(totalPaid)}) + crédit (${formatCurrency(creditAmount)}) doit égaler le total (${formatCurrency(total)})`);
+        setSaleError(`La somme des paiements (${formatCurrency(totalPaid)}) + crédit (${formatCurrency(creditAmount)}) doit égaler le total (${formatCurrency(total)})`);
         return;
       }
       
       // Si crédit > 0, vérifier qu'un client est sélectionné
       if (creditAmount > 0 && !customerId) {
-        toast.error('Un client est requis pour les ventes à crédit');
+        setSaleError('Un client est requis pour les ventes à crédit');
         return;
       }
     } else {
       // Mode simple : vérifier le crédit
       if (paymentMethod === 'credit' || creditAmount > 0) {
         if (!customerId) {
-          toast.error('Un client est requis pour les ventes à crédit');
+          setSaleError('Un client est requis pour les ventes à crédit');
           return;
         }
         // En mode simple avec crédit, créer automatiquement un payment_breakdown vide
@@ -572,6 +595,23 @@ export default function NewSalePage() {
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Affichage des erreurs de vente */}
+      {saleError && (
+        <div className="mb-6 flex items-start gap-3 rounded-lg border-l-4 border-red-400 bg-red-50 p-4 text-red-700">
+          <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium">{saleError}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSaleError(null)}
+            className="flex-shrink-0 p-1 hover:bg-red-100 rounded"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
@@ -651,8 +691,16 @@ export default function NewSalePage() {
                     onClick={() => addToCart(product)}
                     className="w-full flex items-center justify-between p-3 hover:bg-gray-50 text-left"
                   >
-                    <div>
-                      <p className="font-medium text-gray-900">{product.name}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium text-gray-900">{product.name}</p>
+                        {product.is_prescription_required && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
+                            <AlertCircle className="w-3 h-3" />
+                            Ordonnance
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-500">Stock: {product.quantity}</p>
                     </div>
                     <div className="text-right">
@@ -679,7 +727,15 @@ export default function NewSalePage() {
                 {cart.map(item => (
                   <div key={item.product.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{item.product.name}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium text-gray-900">{item.product.name}</p>
+                        {item.product.is_prescription_required && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
+                            <AlertCircle className="w-3 h-3" />
+                            Ordonnance
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-500">
                         {formatCurrency(item.product.selling_price)} / unité
                       </p>
