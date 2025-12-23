@@ -38,9 +38,18 @@ export async function generateHardwareId(): Promise<string> {
     
     // 3. Informations réseau (première interface réseau)
     const networkInterfaces = os.networkInterfaces();
+    interface NetworkInterface {
+      internal?: boolean;
+      mac?: string;
+    }
     const firstInterface = Object.values(networkInterfaces)
       .flat()
-      .find((iface: any) => iface && !iface.internal && iface.mac !== '00:00:00:00:00:00');
+      .find((iface): iface is NetworkInterface => 
+        iface !== null && 
+        typeof iface === 'object' && 
+        !(iface as NetworkInterface).internal && 
+        (iface as NetworkInterface).mac !== '00:00:00:00:00:00'
+      );
     if (firstInterface?.mac) {
       identifiers.push(firstInterface.mac);
     }

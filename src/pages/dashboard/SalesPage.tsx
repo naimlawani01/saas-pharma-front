@@ -78,21 +78,6 @@ export default function SalesPage() {
     return new Intl.NumberFormat('fr-GN').format(value) + ' GNF';
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'badge-success';
-      case 'pending':
-        return 'badge-warning';
-      case 'cancelled':
-        return 'badge-danger';
-      case 'refunded':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'badge-info';
-    }
-  };
-
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'completed':

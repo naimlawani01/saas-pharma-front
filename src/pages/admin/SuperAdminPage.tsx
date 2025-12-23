@@ -12,7 +12,6 @@ import {
   Search,
   RefreshCw,
   Trash2,
-  Power,
   Eye,
   Edit,
   ChevronRight,
@@ -24,7 +23,6 @@ import {
   Loader2,
   Store,
   Key,
-  Copy,
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
