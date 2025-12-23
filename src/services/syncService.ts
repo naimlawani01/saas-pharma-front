@@ -311,6 +311,22 @@ class SyncService {
       return;
     }
 
+    // Vérifier la licence avant de synchroniser
+    const { useLicenseStore } = await import('@/stores/licenseStore');
+    const licenseStore = useLicenseStore.getState();
+    
+    // Si la licence n'est pas activée, vérifier d'abord
+    if (!licenseStore.isActivated) {
+      const verifyResult = await licenseStore.verify();
+      if (!verifyResult.valid) {
+        toast.error('Licence invalide. Veuillez activer votre licence pour synchroniser les données.');
+        return;
+      }
+    } else {
+      // Vérifier périodiquement même si activée
+      await licenseStore.verify();
+    }
+
     this.isSyncing = true;
     toast.loading('Synchronisation en cours...', { id: 'sync' });
 

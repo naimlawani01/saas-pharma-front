@@ -5,6 +5,7 @@
 
 import axios, { AxiosInstance } from 'axios';
 import { appConfig } from '@/config/appConfig';
+import { useAuthStore } from '@/stores/authStore';
 
 export interface SyncConfig {
   cloudUrl: string;
@@ -141,12 +142,10 @@ class CloudSyncService {
     }
 
     try {
-      const formData = new URLSearchParams();
-      formData.append('username', email);
-      formData.append('password', password);
-
-      const response = await this.cloudApi.post('/auth/login', formData, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      // Envoyer en JSON (format attendu par le backend)
+      const response = await this.cloudApi.post('/auth/login', {
+        username: email,
+        password: password
       });
 
       const token = response.data.access_token;
@@ -183,9 +182,17 @@ class CloudSyncService {
    */
   async getLocalSyncStatus(): Promise<SyncStatus | null> {
     try {
-      const token = localStorage.getItem('accessToken');
+      // Récupérer le token depuis le store d'authentification
+      const { accessToken, isAuthenticated } = useAuthStore.getState();
+      
+      // Ne pas faire la requête si l'utilisateur n'est pas authentifié
+      if (!isAuthenticated || !accessToken) {
+        console.log('[CloudSync] Utilisateur non authentifié, skip statut local');
+        return null;
+      }
+      
       const response = await this.localApi.get('/sync/status', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${accessToken}` }
       });
       return response.data;
     } catch (e) {
@@ -224,8 +231,21 @@ class CloudSyncService {
     let downloaded = 0;
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const headers = { Authorization: `Bearer ${token}` };
+      // Récupérer le token depuis le store d'authentification
+      const { accessToken, isAuthenticated } = useAuthStore.getState();
+      
+      if (!isAuthenticated || !accessToken) {
+        this.syncInProgress = false;
+        return {
+          success: false,
+          uploaded: 0,
+          downloaded: 0,
+          errors: ['Utilisateur non authentifié'],
+          timestamp: new Date().toISOString()
+        };
+      }
+      
+      const headers = { Authorization: `Bearer ${accessToken}` };
 
       // 1. UPLOAD: Envoyer les données locales vers le cloud
       console.log('[CloudSync] Début upload vers cloud...');

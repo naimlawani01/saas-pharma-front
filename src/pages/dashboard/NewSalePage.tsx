@@ -562,33 +562,35 @@ export default function NewSalePage() {
   };
 
   return (
-    <div className="animate-fadeIn">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-4">
         <button 
           onClick={() => navigate('/sales')}
-          className="p-2 hover:bg-gray-100 rounded-lg"
+          className="p-2.5 hover:bg-slate-100 rounded-xl transition-colors"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-5 h-5 text-slate-600" />
         </button>
         <div>
-          <h1 className="text-2xl font-display font-bold text-gray-900">Nouvelle vente</h1>
-          <p className="text-gray-500">Créer une nouvelle transaction</p>
+          <h1 className="text-2xl font-display font-bold text-slate-900">Nouvelle vente</h1>
+          <p className="text-slate-500 mt-0.5">Créer une nouvelle transaction</p>
         </div>
       </div>
 
       {/* Alerte si aucune caisse n'est ouverte */}
       {!isCashOpen && (
-        <div className="card bg-yellow-50 border-yellow-200 mb-6">
-          <div className="flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/50 rounded-2xl p-5">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-200">
+              <AlertCircle className="w-6 h-6 text-white" />
+            </div>
             <div className="flex-1">
-              <p className="font-medium text-yellow-900">Aucune caisse ouverte</p>
-              <p className="text-sm text-yellow-700">
+              <p className="font-semibold text-slate-900">Aucune caisse ouverte</p>
+              <p className="text-sm text-slate-600 mt-0.5">
                 Vous devez ouvrir une session de caisse avant de pouvoir effectuer des ventes.
                 <button
                   onClick={() => navigate('/cash')}
-                  className="ml-2 underline font-medium hover:text-yellow-900"
+                  className="ml-2 text-amber-700 underline font-medium hover:text-amber-800"
                 >
                   Ouvrir une caisse
                 </button>
@@ -600,17 +602,19 @@ export default function NewSalePage() {
 
       {/* Affichage des erreurs de vente */}
       {saleError && (
-        <div className="mb-6 flex items-start gap-3 rounded-lg border-l-4 border-red-400 bg-red-50 p-4 text-red-700">
-          <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+          <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <AlertCircle className="h-5 w-5 text-red-600" />
+          </div>
           <div className="flex-1">
-            <p className="text-sm font-medium">{saleError}</p>
+            <p className="text-sm font-medium text-red-800">{saleError}</p>
           </div>
           <button
             type="button"
             onClick={() => setSaleError(null)}
-            className="flex-shrink-0 p-1 hover:bg-red-100 rounded"
+            className="flex-shrink-0 p-1.5 hover:bg-red-100 rounded-lg transition-colors"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4 text-red-500" />
           </button>
         </div>
       )}
@@ -619,24 +623,24 @@ export default function NewSalePage() {
         {/* Product search and cart */}
         <div className="lg:col-span-2 space-y-6">
           {/* Search */}
-          <div className="card">
-            <div className="flex items-center gap-2 mb-3">
+          <div className="bg-white rounded-2xl p-5 shadow-lg shadow-slate-200/50 border border-slate-100">
+            <div className="flex items-center gap-3 mb-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={`Rechercher un ${businessConfig.terminology.product.toLowerCase()} (nom ou code-barre)...`}
-                  className="input pl-10"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all placeholder:text-slate-400"
                   autoFocus
                 />
               </div>
               {/* Scanner controls */}
               <div className="flex items-center gap-2">
                 {isScanning && (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <div className="flex items-center gap-2 px-3 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
                     <span className="text-xs font-medium text-green-700">
                       {scannerType === 'serial' ? 'Serial' : 'USB'} actif
                     </span>

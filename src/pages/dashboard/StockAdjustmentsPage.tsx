@@ -100,118 +100,127 @@ export default function StockAdjustmentsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-purple-600 border-t-transparent"></div>
+          <p className="text-sm text-slate-500">Chargement...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-display font-bold text-gray-900">Ajustements de Stock</h1>
-          <p className="text-gray-500 mt-1">
+          <h1 className="text-2xl font-display font-bold text-slate-900">Ajustements de Stock</h1>
+          <p className="text-slate-500 mt-1">
             {totalItems} ajustement(s) enregistré(s)
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button 
             onClick={() => refetch()} 
             disabled={isFetching}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary"
           >
-            <RefreshCw className={`w-5 h-5 ${isFetching ? 'animate-spin' : ''}`} />
-            Actualiser
+            <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Actualiser</span>
           </button>
           <button 
             onClick={() => setShowAddModal(true)}
-            className="btn-primary flex items-center gap-2"
+            className="btn-primary"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             Nouvel ajustement
           </button>
         </div>
       </div>
 
       {/* Recherche */}
-      <div className="card p-5">
+      <div className="bg-white rounded-2xl p-5 shadow-lg shadow-slate-200/50 border border-slate-100">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher par produit, raison, notes..."
-            className="input pl-10 w-full"
+            className="w-full pl-12 pr-4 py-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all placeholder:text-slate-400"
           />
         </div>
       </div>
 
       {/* Table */}
-      <div className="card overflow-hidden p-0">
+      <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-100 overflow-hidden">
         {filteredAdjustments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-            <Package className="w-16 h-16 text-gray-300 mb-4" />
-            <p className="text-lg font-medium">Aucun ajustement trouvé</p>
-            <p className="text-sm mt-1">Créez votre premier ajustement de stock</p>
+          <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+              <Package className="w-8 h-8 text-slate-400" />
+            </div>
+            <p className="text-lg font-medium text-slate-700 mb-1">Aucun ajustement trouvé</p>
+            <p className="text-sm text-slate-500 mb-6">Créez votre premier ajustement de stock</p>
+            <button onClick={() => setShowAddModal(true)} className="btn-primary">
+              <Plus className="w-4 h-4" />
+              Nouvel ajustement
+            </button>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
                       Date & Heure
                     </div>
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <Package className="w-4 h-4" />
                       Produit
                     </div>
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <Tag className="w-4 h-4" />
                       Raison
                     </div>
                   </th>
-                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Stock Avant
                   </th>
-                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Ajustement
                   </th>
-                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Stock Après
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Notes
                   </th>
-                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Statut
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
+              <tbody className="divide-y divide-slate-50">
                 {paginatedAdjustments.map((adjustment) => (
                   <tr 
                     key={adjustment.id} 
-                    className="hover:bg-gray-50 transition-colors duration-150"
+                    className="hover:bg-slate-50/80 transition-colors"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm">
-                        <div className="font-semibold text-gray-900">
+                        <div className="font-semibold text-slate-900">
                           {new Date(adjustment.created_at).toLocaleDateString('fr-FR', {
                             day: '2-digit',
                             month: 'short',
                             year: 'numeric'
                           })}
                         </div>
-                        <div className="text-gray-500 text-xs mt-0.5">
+                        <div className="text-slate-500 text-xs mt-0.5">
                           {new Date(adjustment.created_at).toLocaleTimeString('fr-FR', {
                             hour: '2-digit',
                             minute: '2-digit'
@@ -221,15 +230,15 @@ export default function StockAdjustmentsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Package className="w-5 h-5 text-primary-600" />
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <Package className="w-5 h-5 text-purple-600" />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-sm font-semibold text-gray-900 truncate">
+                          <div className="text-sm font-semibold text-slate-900 truncate">
                             {adjustment.product?.name || `Produit #${adjustment.product_id}`}
                           </div>
                           {adjustment.product?.barcode && (
-                            <div className="text-xs text-gray-500 mt-0.5">
+                            <div className="text-xs text-slate-500 mt-0.5 font-mono">
                               {adjustment.product.barcode}
                             </div>
                           )}
@@ -238,56 +247,56 @@ export default function StockAdjustmentsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={clsx(
-                        'badge text-xs font-semibold border',
+                        'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold',
                         ADJUSTMENT_REASON_COLORS[adjustment.reason]
                       )}>
                         {ADJUSTMENT_REASON_LABELS[adjustment.reason]}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className="text-sm font-medium text-gray-600 bg-gray-50 px-3 py-1 rounded-md">
+                      <span className="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
                         {adjustment.quantity_before}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         {adjustment.quantity_adjusted > 0 ? (
-                          <ArrowUpCircle className="w-5 h-5 text-green-600" />
+                          <ArrowUpCircle className="w-5 h-5 text-emerald-600" />
                         ) : (
                           <ArrowDownCircle className="w-5 h-5 text-red-600" />
                         )}
                         <span className={clsx(
                           'font-bold text-sm',
-                          adjustment.quantity_adjusted > 0 ? 'text-green-600' : 'text-red-600'
+                          adjustment.quantity_adjusted > 0 ? 'text-emerald-600' : 'text-red-600'
                         )}>
                           {adjustment.quantity_adjusted > 0 ? '+' : ''}{adjustment.quantity_adjusted}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className="text-sm font-bold text-gray-900 bg-primary-50 px-3 py-1 rounded-md">
+                      <span className="text-sm font-bold text-slate-900 bg-purple-50 px-3 py-1 rounded-lg">
                         {adjustment.quantity_after}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-600 max-w-xs">
+                      <div className="text-sm text-slate-600 max-w-xs">
                         {adjustment.notes ? (
                           <div className="truncate" title={adjustment.notes}>
                             {adjustment.notes}
                           </div>
                         ) : (
-                          <span className="text-gray-400">-</span>
+                          <span className="text-slate-400">-</span>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       {adjustment.is_approved ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700">
                           <CheckCircle className="w-3.5 h-3.5" />
                           Approuvé
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700">
                           <Clock className="w-3.5 h-3.5" />
                           En attente
                         </span>

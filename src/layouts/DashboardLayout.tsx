@@ -7,7 +7,7 @@ export default function DashboardLayout() {
   const { sidebarCollapsed } = useAppStore();
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       {/* Sidebar */}
       <Sidebar />
       
@@ -21,7 +21,7 @@ export default function DashboardLayout() {
         <Header />
         
         {/* Page content */}
-        <main className="p-6">
+        <main className="p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

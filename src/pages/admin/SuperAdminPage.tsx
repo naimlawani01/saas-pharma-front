@@ -23,11 +23,62 @@ import {
   X,
   Loader2,
   Store,
+  Key,
+  Copy,
+  CheckCircle,
+  AlertCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import LicensesSection from './LicensesSection';
+
+// Composant pour afficher les erreurs
+function ErrorBanner({ error, onClose }: { error: string | null; onClose: () => void }) {
+  if (!error) return null;
+  
+  return (
+    <div className="mb-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+      <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+        <AlertCircle className="h-5 w-5 text-red-600" />
+      </div>
+      <div className="flex-1">
+        <p className="text-sm font-medium text-red-800">{error}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        className="flex-shrink-0 p-1.5 hover:bg-red-100 rounded-lg transition-colors"
+      >
+        <X className="h-4 w-4 text-red-500" />
+      </button>
+    </div>
+  );
+}
+
+// Composant pour afficher les succès
+function SuccessBanner({ message, onClose }: { message: string | null; onClose: () => void }) {
+  if (!message) return null;
+  
+  return (
+    <div className="mb-6 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+      <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+        <CheckCircle className="h-5 w-5 text-emerald-600" />
+      </div>
+      <div className="flex-1">
+        <p className="text-sm font-medium text-emerald-800">{message}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        className="flex-shrink-0 p-1.5 hover:bg-emerald-100 rounded-lg transition-colors"
+      >
+        <X className="h-4 w-4 text-emerald-500" />
+      </button>
+    </div>
+  );
+}
 
 interface DashboardStats {
   total_pharmacies: number;
@@ -77,8 +128,10 @@ export default function SuperAdminPage() {
   const [search, setSearch] = useState('');
   const [filterActive, setFilterActive] = useState<boolean | null>(null);
   const [filterBusinessType, setFilterBusinessType] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'businesses' | 'users'>('businesses');
+  const [activeTab, setActiveTab] = useState<'businesses' | 'users' | 'licenses'>('businesses');
   const [userSearch, setUserSearch] = useState('');
+  const [pageError, setPageError] = useState<string | null>(null);
+  const [pageSuccess, setPageSuccess] = useState<string | null>(null);
   
   // Modal states
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
@@ -151,10 +204,15 @@ export default function SuperAdminPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-pharmacies'] });
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
-      toast.success('Statut mis à jour');
+      setPageSuccess('Statut mis à jour avec succès');
+      setPageError(null);
+      // Auto-hide success after 3 seconds
+      setTimeout(() => setPageSuccess(null), 3000);
     },
-    onError: () => {
-      toast.error('Erreur lors de la mise à jour');
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Erreur lors de la mise à jour du statut';
+      setPageError(message);
+      setPageSuccess(null);
     },
   });
 
@@ -166,12 +224,18 @@ export default function SuperAdminPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-pharmacies'] });
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
-      toast.success('Commerce supprimé');
+      setPageSuccess('Commerce supprimé avec succès');
       setShowDeleteDialog(false);
       setBusinessToDelete(null);
+      setPageError(null);
+      // Auto-hide success after 3 seconds
+      setTimeout(() => setPageSuccess(null), 3000);
     },
-    onError: () => {
-      toast.error('Erreur lors de la suppression');
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Erreur lors de la suppression du commerce';
+      setPageError(message);
+      setPageSuccess(null);
+      setShowDeleteDialog(false);
     },
   });
 
@@ -190,476 +254,560 @@ export default function SuperAdminPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      {/* Header avec design amélioré */}
-      <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl p-6 text-white shadow-lg">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <ShieldCheck className="w-7 h-7 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+        {/* Affichage des messages */}
+        <ErrorBanner error={pageError} onClose={() => setPageError(null)} />
+        <SuccessBanner message={pageSuccess} onClose={() => setPageSuccess(null)} />
+        
+        {/* Header - Design moderne et épuré */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-3xl p-8 shadow-2xl">
+          {/* Background pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            }} />
+          </div>
+          
+          <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex items-start gap-5">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30 ring-4 ring-white/10">
+                <ShieldCheck className="w-9 h-9 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-display font-bold">Super Admin</h1>
-                <p className="text-purple-100 text-sm">Gestion globale des commerces</p>
+                <h1 className="text-3xl lg:text-4xl font-display font-bold text-white tracking-tight">
+                  Console d'administration
+                </h1>
+                <p className="text-purple-200/80 mt-1 text-base">
+                  Gérez vos commerces, utilisateurs et licences
+                </p>
               </div>
             </div>
-          </div>
-          <button 
-            onClick={() => setShowOnboardingModal(true)}
-            className="bg-white text-purple-600 hover:bg-purple-50 px-6 py-3 rounded-xl font-semibold flex items-center gap-2 shadow-lg transition-all hover:scale-105"
-          >
-            <Plus className="w-5 h-5" />
-            Nouveau Commerce
-          </button>
-        </div>
-      </div>
-
-      {/* Dashboard Stats - Design amélioré */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 text-white">
-            <div className="flex items-center justify-between mb-4">
-              <Store className="w-10 h-10 text-purple-200 group-hover:scale-110 transition-transform" />
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                <Store className="w-6 h-6" />
-              </div>
-            </div>
-            <p className="text-purple-100 text-sm font-medium mb-1">Commerces</p>
-            <p className="text-4xl font-bold">{stats?.total_pharmacies || 0}</p>
-            <p className="text-purple-200 text-xs mt-2">{stats?.active_pharmacies || 0} actif(s)</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 text-white">
-            <div className="flex items-center justify-between mb-4">
-              <Users className="w-10 h-10 text-blue-200 group-hover:scale-110 transition-transform" />
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6" />
-              </div>
-            </div>
-            <p className="text-blue-100 text-sm font-medium mb-1">Utilisateurs</p>
-            <p className="text-4xl font-bold">{stats?.total_users || 0}</p>
-            <p className="text-blue-200 text-xs mt-2">Total système</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
-          <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 text-white">
-            <div className="flex items-center justify-between mb-4">
-              <DollarSign className="w-10 h-10 text-green-200 group-hover:scale-110 transition-transform" />
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                <DollarSign className="w-6 h-6" />
-              </div>
-            </div>
-            <p className="text-green-100 text-sm font-medium mb-1">Ventes totales</p>
-            <p className="text-2xl font-bold">{formatCurrency(stats?.total_sales || 0)}</p>
-            <p className="text-green-200 text-xs mt-2">Ce mois: {formatCurrency(stats?.sales_this_month || 0)}</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-6 text-white">
-            <div className="flex items-center justify-between mb-4">
-              <Package className="w-10 h-10 text-orange-200 group-hover:scale-110 transition-transform" />
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                <Package className="w-6 h-6" />
-              </div>
-            </div>
-            <p className="text-orange-100 text-sm font-medium mb-1">Produits</p>
-            <p className="text-4xl font-bold">{stats?.total_products || 0}</p>
-            <p className="text-orange-200 text-xs mt-2">{stats?.total_customers || 0} clients</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-100 p-1">
-        <div className="flex gap-2">
-          <button
-            onClick={() => setActiveTab('businesses')}
-            className={clsx(
-              'flex-1 px-6 py-3 rounded-lg font-semibold transition-all',
-              activeTab === 'businesses'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'text-gray-600 hover:bg-gray-50'
-            )}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <Store className="w-5 h-5" />
-              Commerces
-            </div>
-          </button>
-          <button
-            onClick={() => setActiveTab('users')}
-            className={clsx(
-              'flex-1 px-6 py-3 rounded-lg font-semibold transition-all',
-              activeTab === 'users'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'text-gray-600 hover:bg-gray-50'
-            )}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <Users className="w-5 h-5" />
-              Utilisateurs
-            </div>
-          </button>
-        </div>
-      </div>
-
-      {/* Filters - Design amélioré */}
-      {activeTab === 'businesses' && (
-      <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4">
-        <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher un commerce..."
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFilterActive(null)}
-              className={clsx(
-                'px-4 py-2.5 rounded-lg font-medium transition-all',
-                filterActive === null 
-                  ? 'bg-purple-600 text-white shadow-md' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              )}
+            <button 
+              onClick={() => setShowOnboardingModal(true)}
+              className="group relative inline-flex items-center gap-2.5 bg-white hover:bg-purple-50 text-slate-900 px-6 py-3.5 rounded-xl font-semibold shadow-xl shadow-black/10 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl"
             >
-                Tous
-            </button>
-            <button
-              onClick={() => setFilterActive(true)}
-              className={clsx(
-                'px-4 py-2.5 rounded-lg font-medium transition-all',
-                filterActive === true 
-                  ? 'bg-green-600 text-white shadow-md' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              )}
-            >
-                Actifs
-            </button>
-            <button
-              onClick={() => setFilterActive(false)}
-              className={clsx(
-                'px-4 py-2.5 rounded-lg font-medium transition-all',
-                filterActive === false 
-                  ? 'bg-red-600 text-white shadow-md' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              )}
-            >
-                Inactifs
+              <Plus className="w-5 h-5 text-purple-600 group-hover:rotate-90 transition-transform duration-300" />
+              <span>Nouveau Commerce</span>
             </button>
           </div>
-          <button
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium flex items-center gap-2 transition-all disabled:opacity-50"
-          >
-            <RefreshCw className={clsx('w-5 h-5', isFetching && 'animate-spin')} />
-            Actualiser
-          </button>
         </div>
-          
-          {/* Filtre par type d'activité */}
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setFilterBusinessType(null)}
-              className={clsx(
-                'px-3 py-1.5 rounded-full text-sm font-medium transition-all',
-                filterBusinessType === null 
-                  ? 'bg-purple-100 text-purple-700 ring-2 ring-purple-500' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              )}
-            >
-              Tous types
-            </button>
-            {BUSINESS_TYPES.map((type) => (
+
+        {/* Dashboard Stats - Cards avec design glassmorphism */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+          {/* Commerces */}
+          <div className="group relative bg-white rounded-2xl p-6 shadow-lg shadow-slate-200/50 border border-slate-100 hover:shadow-xl hover:shadow-purple-100/50 transition-all duration-300 hover:-translate-y-1">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-100 to-transparent rounded-bl-full opacity-50" />
+            <div className="relative">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-200 mb-4 group-hover:scale-110 transition-transform duration-300">
+                <Store className="w-6 h-6 text-white" />
+              </div>
+              <p className="text-sm font-medium text-slate-500 uppercase tracking-wide">Commerces</p>
+              <p className="text-4xl font-bold text-slate-900 mt-1">{stats?.total_pharmacies || 0}</p>
+              <div className="flex items-center gap-2 mt-3">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 animate-pulse" />
+                  {stats?.active_pharmacies || 0} actifs
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Utilisateurs */}
+          <div className="group relative bg-white rounded-2xl p-6 shadow-lg shadow-slate-200/50 border border-slate-100 hover:shadow-xl hover:shadow-blue-100/50 transition-all duration-300 hover:-translate-y-1">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-100 to-transparent rounded-bl-full opacity-50" />
+            <div className="relative">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 mb-4 group-hover:scale-110 transition-transform duration-300">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <p className="text-sm font-medium text-slate-500 uppercase tracking-wide">Utilisateurs</p>
+              <p className="text-4xl font-bold text-slate-900 mt-1">{stats?.total_users || 0}</p>
+              <div className="flex items-center gap-2 mt-3">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                  Total système
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Ventes */}
+          <div className="group relative bg-white rounded-2xl p-6 shadow-lg shadow-slate-200/50 border border-slate-100 hover:shadow-xl hover:shadow-emerald-100/50 transition-all duration-300 hover:-translate-y-1">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-100 to-transparent rounded-bl-full opacity-50" />
+            <div className="relative">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200 mb-4 group-hover:scale-110 transition-transform duration-300">
+                <DollarSign className="w-6 h-6 text-white" />
+              </div>
+              <p className="text-sm font-medium text-slate-500 uppercase tracking-wide">Ventes totales</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">{formatCurrency(stats?.total_sales || 0)}</p>
+              <div className="flex items-center gap-2 mt-3">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                  <TrendingUp className="w-3 h-3 mr-1" />
+                  {formatCurrency(stats?.sales_this_month || 0)} ce mois
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Produits */}
+          <div className="group relative bg-white rounded-2xl p-6 shadow-lg shadow-slate-200/50 border border-slate-100 hover:shadow-xl hover:shadow-amber-100/50 transition-all duration-300 hover:-translate-y-1">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-100 to-transparent rounded-bl-full opacity-50" />
+            <div className="relative">
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-200 mb-4 group-hover:scale-110 transition-transform duration-300">
+                <Package className="w-6 h-6 text-white" />
+              </div>
+              <p className="text-sm font-medium text-slate-500 uppercase tracking-wide">Produits</p>
+              <p className="text-4xl font-bold text-slate-900 mt-1">{stats?.total_products || 0}</p>
+              <div className="flex items-center gap-2 mt-3">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                  {stats?.total_customers || 0} clients
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs - Design moderne avec underline */}
+        <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-100 overflow-hidden">
+          <div className="border-b border-slate-200">
+            <div className="flex">
               <button
-                key={type.id}
-                onClick={() => setFilterBusinessType(type.id)}
+                onClick={() => setActiveTab('businesses')}
                 className={clsx(
-                  'px-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1',
-                  filterBusinessType === type.id 
-                    ? 'bg-purple-100 text-purple-700 ring-2 ring-purple-500' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  'flex-1 relative px-6 py-4 font-medium text-sm transition-all duration-200',
+                  activeTab === 'businesses'
+                    ? 'text-purple-600'
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                 )}
               >
-                <span>{type.icon}</span>
-                {type.name}
+                <div className="flex items-center justify-center gap-2">
+                  <Store className="w-5 h-5" />
+                  <span>Commerces</span>
+                  {businesses && (
+                    <span className="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-600">
+                      {businesses.length}
+                    </span>
+                  )}
+                </div>
+                {activeTab === 'businesses' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600" />
+                )}
               </button>
-            ))}
-      </div>
-        </div>
-      </div>
-      )}
-
-      {/* Users Search */}
-      {activeTab === 'users' && (
-        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                placeholder="Rechercher un utilisateur (nom, email, username)..."
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-              />
+              <button
+                onClick={() => setActiveTab('users')}
+                className={clsx(
+                  'flex-1 relative px-6 py-4 font-medium text-sm transition-all duration-200',
+                  activeTab === 'users'
+                    ? 'text-purple-600'
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                )}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <Users className="w-5 h-5" />
+                  <span>Utilisateurs</span>
+                </div>
+                {activeTab === 'users' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('licenses')}
+                className={clsx(
+                  'flex-1 relative px-6 py-4 font-medium text-sm transition-all duration-200',
+                  activeTab === 'licenses'
+                    ? 'text-purple-600'
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                )}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <Key className="w-5 h-5" />
+                  <span>Licences</span>
+                </div>
+                {activeTab === 'licenses' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600" />
+                )}
+              </button>
             </div>
-            <button
-              onClick={() => refetchUsers()}
-              disabled={isLoadingUsers}
-              className="btn-secondary flex items-center gap-2"
-            >
-              <RefreshCw className={`w-5 h-5 ${isLoadingUsers ? 'animate-spin' : ''}`} />
-              Actualiser
-            </button>
           </div>
         </div>
-      )}
 
-      {/* Commerces List - Design amélioré */}
-      {activeTab === 'businesses' && (
-      <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-          </div>
-        ) : businesses && businesses.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gradient-to-r from-purple-50 to-purple-100">
-                <tr className="text-left text-sm">
-                  <th className="px-6 py-4 font-semibold text-gray-700">Commerce</th>
-                  <th className="px-6 py-4 font-semibold text-gray-700">Type</th>
-                  <th className="px-6 py-4 font-semibold text-gray-700">Utilisateurs</th>
-                  <th className="px-6 py-4 font-semibold text-gray-700">Produits</th>
-                  <th className="px-6 py-4 font-semibold text-gray-700">Ventes</th>
-                  <th className="px-6 py-4 font-semibold text-gray-700">Statut</th>
-                  <th className="px-6 py-4 font-semibold text-gray-700 w-40">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {businesses.map((business) => (
-                  <tr key={business.id} className="hover:bg-purple-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md text-2xl">
-                          {getBusinessTypeIcon(business.business_type)}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{business.name}</p>
-                          <p className="text-sm text-gray-500">{business.city || 'N/A'}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        {getBusinessTypeIcon(business.business_type)} {getBusinessTypeLabel(business.business_type)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                        {business.users_count} utilisateur(s)
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-gray-700 font-medium">{business.products_count} produits</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="font-semibold text-gray-900">{formatCurrency(business.total_sales)}</p>
-                        <p className="text-xs text-gray-500">{business.sales_count} vente(s)</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => toggleMutation.mutate(business.id)}
-                        className={clsx(
-                          'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all hover:scale-105',
-                          business.is_active 
-                            ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                            : 'bg-red-100 text-red-800 hover:bg-red-200'
-                        )}
-                      >
-                        <Power className={clsx('w-3.5 h-3.5', business.is_active ? 'text-green-600' : 'text-red-600')} />
-                        {business.is_active ? 'Actif' : 'Inactif'}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleViewDetail(business)}
-                          className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
-                          title="Voir détails"
-                        >
-                          <Eye className="w-5 h-5 text-purple-600" />
-                        </button>
-                        <button
-                          onClick={() => handleEditBusiness(business)}
-                          className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
-                          title="Modifier"
-                        >
-                          <Edit className="w-5 h-5 text-blue-600" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setBusinessToDelete(business);
-                            setShowDeleteDialog(true);
-                          }}
-                          className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-5 h-5 text-red-500" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-64 text-gray-500 p-8">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <Store className="w-8 h-8 text-gray-400" />
+        {/* Filters - Inside tab content area */}
+        {activeTab === 'businesses' && (
+          <div className="p-6 space-y-4">
+            <div className="flex flex-col lg:flex-row gap-4">
+              {/* Search */}
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Rechercher un commerce par nom, ville..."
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all placeholder:text-slate-400"
+                />
+              </div>
+              
+              {/* Status filters */}
+              <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl">
+                <button
+                  onClick={() => setFilterActive(null)}
+                  className={clsx(
+                    'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                    filterActive === null 
+                      ? 'bg-white text-slate-900 shadow-sm' 
+                      : 'text-slate-600 hover:text-slate-900'
+                  )}
+                >
+                  Tous
+                </button>
+                <button
+                  onClick={() => setFilterActive(true)}
+                  className={clsx(
+                    'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                    filterActive === true 
+                      ? 'bg-white text-emerald-600 shadow-sm' 
+                      : 'text-slate-600 hover:text-slate-900'
+                  )}
+                >
+                  Actifs
+                </button>
+                <button
+                  onClick={() => setFilterActive(false)}
+                  className={clsx(
+                    'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                    filterActive === false 
+                      ? 'bg-white text-red-600 shadow-sm' 
+                      : 'text-slate-600 hover:text-slate-900'
+                  )}
+                >
+                  Inactifs
+                </button>
+              </div>
+              
+              {/* Refresh button */}
+              <button
+                onClick={() => refetch()}
+                disabled={isFetching}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium flex items-center gap-2 transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={clsx('w-4 h-4', isFetching && 'animate-spin')} />
+                <span className="hidden sm:inline">Actualiser</span>
+              </button>
             </div>
-            <p className="text-lg font-medium text-gray-700 mb-2">Aucun commerce trouvé</p>
-            <p className="text-sm text-gray-500 mb-4">Commencez par créer votre premier commerce</p>
-            <button 
-              onClick={() => setShowOnboardingModal(true)} 
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 shadow-md transition-all hover:scale-105"
-            >
-              <Plus className="w-5 h-5" />
-              Créer un commerce
-            </button>
+            
+            {/* Business type filters */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setFilterBusinessType(null)}
+                className={clsx(
+                  'px-3.5 py-2 rounded-xl text-sm font-medium transition-all border',
+                  filterBusinessType === null 
+                    ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-200' 
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-purple-300 hover:text-purple-600'
+                )}
+              >
+                Tous types
+              </button>
+              {BUSINESS_TYPES.map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => setFilterBusinessType(type.id)}
+                  className={clsx(
+                    'px-3.5 py-2 rounded-xl text-sm font-medium transition-all border flex items-center gap-1.5',
+                    filterBusinessType === type.id 
+                      ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-200' 
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-purple-300 hover:text-purple-600'
+                  )}
+                >
+                  <span>{type.icon}</span>
+                  {type.name}
+                </button>
+              ))}
+            </div>
           </div>
         )}
-      </div>
-      )}
 
-      {/* Users List */}
-      {activeTab === 'users' && (
-        <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-          {isLoadingUsers ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        {/* Users Search */}
+        {activeTab === 'users' && (
+          <div className="p-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  placeholder="Rechercher un utilisateur (nom, email, username)..."
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all placeholder:text-slate-400"
+                />
+              </div>
+              <button
+                onClick={() => refetchUsers()}
+                disabled={isLoadingUsers}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium flex items-center gap-2 transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${isLoadingUsers ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Actualiser</span>
+              </button>
             </div>
-          ) : users && users.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-purple-50 to-purple-100">
-                  <tr className="text-left text-sm">
-                    <th className="px-6 py-4 font-semibold text-gray-700">Utilisateur</th>
-                    <th className="px-6 py-4 font-semibold text-gray-700">Email</th>
-                    <th className="px-6 py-4 font-semibold text-gray-700">Rôle</th>
-                    <th className="px-6 py-4 font-semibold text-gray-700">Commerce</th>
-                    <th className="px-6 py-4 font-semibold text-gray-700">Dernière connexion</th>
-                    <th className="px-6 py-4 font-semibold text-gray-700">Statut</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {users.map((user: any) => {
-                    const lastLogin = user.last_login 
-                      ? new Date(user.last_login)
-                      : null;
-                    const isRecentlyActive = lastLogin && 
-                      (Date.now() - lastLogin.getTime()) < 24 * 60 * 60 * 1000; // Moins de 24h
-                    
-                    return (
-                      <tr key={user.id} className="hover:bg-purple-50/50 transition-colors">
+          </div>
+        )}
+
+        {/* Commerces List - Design moderne */}
+        {activeTab === 'businesses' && (
+          <div className="border-t border-slate-100">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="animate-spin rounded-full h-10 w-10 border-2 border-purple-600 border-t-transparent"></div>
+                  <p className="text-sm text-slate-500">Chargement...</p>
+                </div>
+              </div>
+            ) : businesses && businesses.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-100">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Commerce</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Utilisateurs</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Produits</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Ventes</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Statut</th>
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {businesses.map((business, index) => (
+                      <tr 
+                        key={business.id} 
+                        className="group hover:bg-slate-50/80 transition-colors"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold shadow-md">
-                              {user.full_name ? user.full_name.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()}
+                          <div className="flex items-center gap-4">
+                            <div className="w-11 h-11 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center text-xl shadow-sm group-hover:shadow-md transition-shadow">
+                              {getBusinessTypeIcon(business.business_type)}
                             </div>
                             <div>
-                              <p className="font-semibold text-gray-900">{user.full_name || user.username}</p>
-                              <p className="text-sm text-gray-500">@{user.username}</p>
+                              <p className="font-semibold text-slate-900">{business.name}</p>
+                              <p className="text-sm text-slate-500">{business.city || 'Ville non renseignée'}</p>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="text-gray-700">{user.email}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={clsx(
-                            'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium',
-                            user.role === 'admin' 
-                              ? 'bg-purple-100 text-purple-800'
-                              : user.role === 'pharmacist'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-gray-100 text-gray-800'
-                          )}>
-                            {user.role === 'admin' ? 'Admin' : user.role === 'pharmacist' ? 'Pharmacien' : 'Assistant'}
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700">
+                            {getBusinessTypeLabel(business.business_type)}
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="text-gray-700">{user.pharmacy_name || '-'}</span>
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-slate-400" />
+                            <span className="text-slate-700 font-medium">{business.users_count}</span>
+                          </div>
                         </td>
                         <td className="px-6 py-4">
-                          {lastLogin ? (
-                            <div className="flex items-center gap-2">
-                              <div className={clsx(
-                                'w-2 h-2 rounded-full',
-                                isRecentlyActive ? 'bg-green-500' : 'bg-gray-400'
-                              )} />
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">
-                                  {lastLogin.toLocaleDateString('fr-FR', { 
-                                    day: 'numeric', 
-                                    month: 'short', 
-                                    year: 'numeric' 
-                                  })}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {lastLogin.toLocaleTimeString('fr-FR', { 
-                                    hour: '2-digit', 
-                                    minute: '2-digit' 
-                                  })}
-                                </p>
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-gray-400 italic">Jamais connecté</span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <Package className="w-4 h-4 text-slate-400" />
+                            <span className="text-slate-700 font-medium">{business.products_count}</span>
+                          </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={clsx(
-                            'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium',
-                            user.is_active
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          )}>
-                            {user.is_active ? 'Actif' : 'Inactif'}
-                          </span>
+                          <div>
+                            <p className="font-semibold text-slate-900">{formatCurrency(business.total_sales)}</p>
+                            <p className="text-xs text-slate-500">{business.sales_count} transactions</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => toggleMutation.mutate(business.id)}
+                            className={clsx(
+                              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                              business.is_active 
+                                ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' 
+                                : 'bg-red-50 text-red-700 hover:bg-red-100'
+                            )}
+                          >
+                            <span className={clsx('w-1.5 h-1.5 rounded-full', business.is_active ? 'bg-emerald-500' : 'bg-red-500')} />
+                            {business.is_active ? 'Actif' : 'Inactif'}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => handleViewDetail(business)}
+                              className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                              title="Voir détails"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleEditBusiness(business)}
+                              className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Modifier"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setBusinessToDelete(business);
+                                setShowDeleteDialog(true);
+                              }}
+                              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-500 p-8">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <Users className="w-8 h-8 text-gray-400" />
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <p className="text-lg font-medium text-gray-700 mb-2">Aucun utilisateur trouvé</p>
-              <p className="text-sm text-gray-500">Aucun utilisateur ne correspond à votre recherche</p>
-            </div>
-          )}
-        </div>
-      )}
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 px-8">
+                <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mb-5">
+                  <Store className="w-10 h-10 text-slate-400" />
+                </div>
+                <p className="text-lg font-semibold text-slate-900 mb-2">Aucun commerce trouvé</p>
+                <p className="text-sm text-slate-500 mb-6 text-center max-w-sm">Commencez par créer votre premier commerce pour gérer votre activité</p>
+                <button 
+                  onClick={() => setShowOnboardingModal(true)} 
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 shadow-lg shadow-purple-200 transition-all hover:scale-[1.02]"
+                >
+                  <Plus className="w-5 h-5" />
+                  Créer un commerce
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Users List */}
+        {activeTab === 'users' && (
+          <div className="border-t border-slate-100">
+            {isLoadingUsers ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="animate-spin rounded-full h-10 w-10 border-2 border-purple-600 border-t-transparent"></div>
+                  <p className="text-sm text-slate-500">Chargement des utilisateurs...</p>
+                </div>
+              </div>
+            ) : users && users.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-100">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Utilisateur</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Rôle</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Commerce</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Dernière connexion</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {users.map((user: any) => {
+                      const lastLogin = user.last_login 
+                        ? new Date(user.last_login)
+                        : null;
+                      const isRecentlyActive = lastLogin && 
+                        (Date.now() - lastLogin.getTime()) < 24 * 60 * 60 * 1000;
+                      
+                      return (
+                        <tr key={user.id} className="group hover:bg-slate-50/80 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl flex items-center justify-center text-white font-semibold text-sm shadow-sm">
+                                {user.full_name ? user.full_name.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="font-semibold text-slate-900">{user.full_name || user.username}</p>
+                                <p className="text-sm text-slate-500">@{user.username}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-slate-600">{user.email}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={clsx(
+                              'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium',
+                              user.role === 'admin' 
+                                ? 'bg-purple-50 text-purple-700'
+                                : user.role === 'pharmacist'
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'bg-slate-100 text-slate-700'
+                            )}>
+                              {user.role === 'admin' ? 'Admin' : user.role === 'pharmacist' ? 'Pharmacien' : 'Assistant'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-slate-600">{user.pharmacy_name || '-'}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            {lastLogin ? (
+                              <div className="flex items-center gap-2">
+                                <span className={clsx(
+                                  'w-2 h-2 rounded-full',
+                                  isRecentlyActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'
+                                )} />
+                                <div>
+                                  <p className="text-sm font-medium text-slate-900">
+                                    {lastLogin.toLocaleDateString('fr-FR', { 
+                                      day: 'numeric', 
+                                      month: 'short', 
+                                      year: 'numeric' 
+                                    })}
+                                  </p>
+                                  <p className="text-xs text-slate-500">
+                                    {lastLogin.toLocaleTimeString('fr-FR', { 
+                                      hour: '2-digit', 
+                                      minute: '2-digit' 
+                                    })}
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 text-sm">Jamais connecté</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={clsx(
+                              'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium',
+                              user.is_active
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : 'bg-red-50 text-red-700'
+                            )}>
+                              <span className={clsx('w-1.5 h-1.5 rounded-full', user.is_active ? 'bg-emerald-500' : 'bg-red-500')} />
+                              {user.is_active ? 'Actif' : 'Inactif'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 px-8">
+                <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mb-5">
+                  <Users className="w-10 h-10 text-slate-400" />
+                </div>
+                <p className="text-lg font-semibold text-slate-900 mb-2">Aucun utilisateur trouvé</p>
+                <p className="text-sm text-slate-500">Aucun utilisateur ne correspond à votre recherche</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Licenses Section */}
+        {activeTab === 'licenses' && (
+          <div className="p-6">
+            <LicensesSection />
+          </div>
+        )}
 
       {/* Onboarding Modal */}
       <OnboardingModal
@@ -707,6 +855,7 @@ export default function SuperAdminPage() {
         type="danger"
         isLoading={deleteMutation.isPending}
       />
+      </div>
     </div>
   );
 }
@@ -717,6 +866,7 @@ function OnboardingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   const [step, setStep] = useState(1);
   const [createdBusinessId, setCreatedBusinessId] = useState<number | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     // Commerce
     pharmacy_name: '',
@@ -744,11 +894,12 @@ function OnboardingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
       
       if (!businessId) {
         console.error('ID de commerce manquant dans la réponse:', response.data);
-        toast.error('Erreur: ID de commerce manquant');
+        setModalError('Erreur: ID de commerce manquant dans la réponse');
         return;
       }
       
       setCreatedBusinessId(businessId);
+      setModalError(null);
       
       // Toujours passer à l'étape 4 pour permettre l'import de produits
       // Ne pas fermer le modal, juste changer l'étape
@@ -763,7 +914,7 @@ function OnboardingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
       }, 500);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la création');
+      setModalError(error.response?.data?.detail || 'Erreur lors de la création du commerce');
     },
   });
 
@@ -784,11 +935,12 @@ function OnboardingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
       } else {
         toast.success(`${created} produit(s) importé(s) avec succès !`);
       }
+      setModalError(null);
       queryClient.invalidateQueries({ queryKey: ['admin-pharmacies'] });
       handleClose();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Erreur lors de l\'import des produits');
+      setModalError(error.response?.data?.detail || 'Erreur lors de l\'import des produits');
     },
   });
 
@@ -797,6 +949,7 @@ function OnboardingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
     setStep(1);
     setCreatedBusinessId(null);
     setSelectedFile(null);
+    setModalError(null);
     setFormData({
       pharmacy_name: '',
       pharmacy_address: '',
@@ -813,24 +966,26 @@ function OnboardingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   };
 
   const handleSubmit = () => {
+    setModalError(null);
+    
     if (step === 1) {
       // Étape 1: Type d'activité
       if (!formData.business_type) {
-        toast.error('Sélectionnez un type d\'activité');
+        setModalError('Sélectionnez un type d\'activité');
         return;
       }
       setStep(2);
     } else if (step === 2) {
       // Étape 2: Infos commerce
       if (!formData.pharmacy_name) {
-        toast.error('Le nom du commerce est requis');
+        setModalError('Le nom du commerce est requis');
         return;
       }
       setStep(3);
     } else if (step === 3) {
       // Étape 3: Admin
       if (!formData.admin_email || !formData.admin_username || !formData.admin_password) {
-        toast.error('Email, nom d\'utilisateur et mot de passe sont requis');
+        setModalError('Email, nom d\'utilisateur et mot de passe sont requis');
         return;
       }
       createMutation.mutate();
@@ -852,8 +1007,9 @@ function OnboardingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
       const extension = file.name.split('.').pop()?.toLowerCase();
       if (extension && ['xlsx', 'xls', 'csv'].includes(extension)) {
         setSelectedFile(file);
+        setModalError(null);
       } else {
-        toast.error('Format de fichier non supporté. Utilisez .xlsx, .xls ou .csv');
+        setModalError('Format de fichier non supporté. Utilisez .xlsx, .xls ou .csv');
       }
     }
   };
@@ -871,6 +1027,25 @@ function OnboardingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
       size="md"
     >
       <div className="space-y-4">
+        {/* Affichage des erreurs */}
+        {modalError && (
+          <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+            <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800">{modalError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setModalError(null)}
+              className="flex-shrink-0 p-1 hover:bg-red-100 rounded-lg transition-colors"
+            >
+              <X className="h-4 w-4 text-red-500" />
+            </button>
+          </div>
+        )}
+        
         {/* Debug: Afficher l'étape actuelle */}
         {process.env.NODE_ENV === 'development' && (
           <div className="text-xs text-gray-400">Étape actuelle: {step} | Business ID: {createdBusinessId || 'null'}</div>
@@ -1406,6 +1581,7 @@ function BusinessEditModal({
   business: Business | null;
 }) {
   const queryClient = useQueryClient();
+  const [editError, setEditError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -1428,6 +1604,7 @@ function BusinessEditModal({
         license_number: business.license_number || '',
         business_type: business.business_type || 'general',
       });
+      setEditError(null);
     }
   }, [business]);
 
@@ -1439,17 +1616,19 @@ function BusinessEditModal({
       queryClient.invalidateQueries({ queryKey: ['admin-pharmacies'] });
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
       toast.success('Commerce modifié avec succès');
+      setEditError(null);
       onClose();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la modification');
+      setEditError(error.response?.data?.detail || 'Erreur lors de la modification');
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setEditError(null);
     if (!formData.name) {
-      toast.error('Le nom du commerce est requis');
+      setEditError('Le nom du commerce est requis');
       return;
     }
     updateMutation.mutate();
@@ -1460,6 +1639,24 @@ function BusinessEditModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Modifier: ${business.name}`} size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Affichage des erreurs */}
+        {editError && (
+          <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+            <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800">{editError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEditError(null)}
+              className="flex-shrink-0 p-1 hover:bg-red-100 rounded-lg transition-colors"
+            >
+              <X className="h-4 w-4 text-red-500" />
+            </button>
+          </div>
+        )}
         {/* Type d'activité */}
         <div>
           <label className="label">Type d'activité</label>

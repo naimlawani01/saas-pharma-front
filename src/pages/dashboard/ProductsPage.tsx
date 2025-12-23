@@ -199,63 +199,63 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-display font-bold text-gray-900">{businessConfig.terminology.productPlural}</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-display font-bold text-slate-900">{businessConfig.terminology.productPlural}</h1>
+          <p className="text-slate-500 mt-1">
             {products?.length || 0} {businessConfig.terminology.product.toLowerCase()}(s) dans l'inventaire
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button 
             onClick={handleExportExcel}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary"
             title="Export Excel"
           >
-            <FileSpreadsheet className="w-5 h-5" />
-            Excel
+            <FileSpreadsheet className="w-4 h-4" />
+            <span className="hidden sm:inline">Excel</span>
           </button>
           <button 
             onClick={handleExportPDF}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary"
             title="Export PDF"
           >
-            <FileText className="w-5 h-5" />
-            PDF
+            <FileText className="w-4 h-4" />
+            <span className="hidden sm:inline">PDF</span>
           </button>
           <button 
             onClick={handleAdd}
-            className="btn-primary flex items-center gap-2"
+            className="btn-primary"
           >
-            <Plus className="w-5 h-5" />
-            Ajouter un {businessConfig.terminology.product.toLowerCase()}
+            <Plus className="w-4 h-4" />
+            Ajouter
           </button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="card">
-        <div className="flex flex-col sm:flex-row gap-4">
+      <div className="bg-white rounded-2xl p-5 shadow-lg shadow-slate-200/50 border border-slate-100">
+        <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher par nom, code-barre..."
-              className="input pl-10"
+              className="w-full pl-12 pr-4 py-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all placeholder:text-slate-400"
             />
           </div>
           
           {/* Sélecteur de catégorie */}
           <div className="relative min-w-[200px]">
-            <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
+            <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
             <select
               value={selectedCategoryId || ''}
               onChange={(e) => setSelectedCategoryId(e.target.value ? parseInt(e.target.value) : null)}
-              className="input pl-10 w-full appearance-none cursor-pointer pr-8"
+              className="w-full pl-11 pr-10 py-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all appearance-none cursor-pointer text-slate-700"
             >
               <option value="">Toutes les catégories</option>
               {categories?.map((category) => (
@@ -267,10 +267,10 @@ export default function ProductsPage() {
             {selectedCategoryId && (
               <button
                 onClick={() => setSelectedCategoryId(null)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-200 rounded-lg transition-colors"
                 title="Effacer le filtre"
               >
-                <X className="w-4 h-4 text-gray-400" />
+                <X className="w-4 h-4 text-slate-500" />
               </button>
             )}
           </div>
@@ -278,137 +278,148 @@ export default function ProductsPage() {
           <button
             onClick={() => setShowLowStock(!showLowStock)}
             className={clsx(
-              'btn flex items-center gap-2',
-              showLowStock ? 'bg-yellow-100 text-yellow-700' : 'btn-secondary'
+              'px-4 py-3 rounded-xl font-medium transition-all flex items-center gap-2',
+              showLowStock 
+                ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-500' 
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             )}
           >
-            <AlertTriangle className="w-5 h-5" />
-            Stock critique
+            <AlertTriangle className="w-4 h-4" />
+            <span className="hidden sm:inline">Stock critique</span>
           </button>
           <button
             onClick={handleRefresh}
             disabled={isFetching}
-            className="btn-secondary flex items-center gap-2"
+            className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-medium flex items-center gap-2 transition-colors disabled:opacity-50"
           >
-            <RefreshCw className={clsx('w-5 h-5', isFetching && 'animate-spin')} />
-            Actualiser
+            <RefreshCw className={clsx('w-4 h-4', isFetching && 'animate-spin')} />
+            <span className="hidden sm:inline">Actualiser</span>
           </button>
         </div>
       </div>
 
       {/* Products table */}
-      <div className="card overflow-hidden p-0">
+      <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-100 overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <div className="flex flex-col items-center gap-3">
+              <div className="animate-spin rounded-full h-10 w-10 border-2 border-purple-600 border-t-transparent"></div>
+              <p className="text-sm text-slate-500">Chargement...</p>
+            </div>
           </div>
         ) : products && products.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr className="text-left text-sm text-gray-500">
-                  <th className="px-6 py-4 font-medium">{businessConfig.terminology.product}</th>
-                  <th className="px-6 py-4 font-medium">Catégorie</th>
-                  <th className="px-6 py-4 font-medium">Stock</th>
-                  <th className="px-6 py-4 font-medium">Prix d'achat</th>
-                  <th className="px-6 py-4 font-medium">Prix de vente</th>
-                  {showExpiryDates && <th className="px-6 py-4 font-medium">Expiration</th>}
-                  <th className="px-6 py-4 font-medium">Ordonnance</th>
-                  <th className="px-6 py-4 font-medium">Statut</th>
-                  <th className="px-6 py-4 font-medium w-32">Actions</th>
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{businessConfig.terminology.product}</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Catégorie</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Stock</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Prix d'achat</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Prix de vente</th>
+                  {showExpiryDates && <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Expiration</th>}
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Ordonnance</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Statut</th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-slate-50">
                 {paginatedProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
+                  <tr key={product.id} className="hover:bg-slate-50/80 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                          <Package className="w-5 h-5 text-primary-600" />
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-xl flex items-center justify-center shadow-sm">
+                          <Package className="w-5 h-5 text-purple-600" />
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-gray-900">{product.name}</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-semibold text-slate-900">{product.name}</p>
                             {product.is_prescription_required && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-700">
                                 <AlertTriangle className="w-3 h-3" />
                                 Ordonnance
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            {product.barcode && <span>{product.barcode}</span>}
+                          <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5">
+                            {product.barcode && <span className="font-mono text-xs">{product.barcode}</span>}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       {product.category ? (
-                        <span className="badge badge-info">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700">
                           {product.category.name}
                         </span>
                       ) : (
-                        <span className="text-gray-400 text-sm">-</span>
+                        <span className="text-slate-400 text-sm">-</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
                       <span className={clsx(
-                        'badge',
-                        isLowStock(product) ? 'badge-danger' : 'badge-success'
+                        'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold',
+                        isLowStock(product) 
+                          ? 'bg-red-50 text-red-700' 
+                          : 'bg-emerald-50 text-emerald-700'
                       )}>
                         {product.quantity} / {product.min_quantity}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-600">
+                    <td className="px-6 py-4 text-slate-600 font-medium">
                       {formatCurrency(product.purchase_price)}
                     </td>
-                    <td className="px-6 py-4 font-medium text-gray-900">
+                    <td className="px-6 py-4 font-semibold text-slate-900">
                       {formatCurrency(product.selling_price)}
                     </td>
                     {showExpiryDates && (
                     <td className="px-6 py-4">
                       {product.expiry_date ? (
                         <span className={clsx(
-                          'badge',
-                          isExpiringSoon(product) ? 'badge-warning' : 'badge-info'
+                          'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium',
+                          isExpiringSoon(product) 
+                            ? 'bg-amber-50 text-amber-700' 
+                            : 'bg-blue-50 text-blue-700'
                         )}>
                           {new Date(product.expiry_date).toLocaleDateString('fr-FR')}
                         </span>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-slate-400">-</span>
                       )}
                     </td>
                     )}
                     <td className="px-6 py-4">
                       {product.is_prescription_required ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
-                          <AlertTriangle className="w-3.5 h-3.5" />
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-50 text-amber-700">
+                          <AlertTriangle className="w-3 h-3" />
                           Oui
                         </span>
                       ) : (
-                        <span className="text-gray-400 text-sm">Non</span>
+                        <span className="text-slate-400 text-sm">Non</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
                       <span className={clsx(
-                        'badge',
-                        product.is_active ? 'badge-success' : 'badge-danger'
+                        'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium',
+                        product.is_active 
+                          ? 'bg-emerald-50 text-emerald-700' 
+                          : 'bg-red-50 text-red-700'
                       )}>
                         {product.is_active ? 'Actif' : 'Inactif'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
                           onClick={() => handleEdit(product)}
-                          className="p-2 hover:bg-gray-100 rounded-lg"
+                          className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
                           title="Modifier"
                         >
-                          <Edit className="w-4 h-4 text-gray-500" />
+                          <Edit className="w-4 h-4 text-slate-500" />
                         </button>
                         <button 
                           onClick={() => handleDelete(product)}
-                          className="p-2 hover:bg-red-50 rounded-lg"
+                          className="p-2 hover:bg-red-50 rounded-xl transition-colors"
                           title="Supprimer"
                         >
                           <Trash2 className="w-4 h-4 text-red-500" />
@@ -433,10 +444,18 @@ export default function ProductsPage() {
             )}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-            <Package className="w-12 h-12 mb-4 text-gray-300" />
-            <p>Aucun {businessConfig.terminology.product.toLowerCase()} trouvé</p>
-            <button onClick={handleAdd} className="mt-4 btn-primary">
+          <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+              <Package className="w-8 h-8 text-slate-400" />
+            </div>
+            <p className="text-lg font-medium text-slate-700 mb-1">
+              Aucun {businessConfig.terminology.product.toLowerCase()} trouvé
+            </p>
+            <p className="text-sm text-slate-500 mb-6">
+              Commencez par ajouter votre premier {businessConfig.terminology.product.toLowerCase()}
+            </p>
+            <button onClick={handleAdd} className="btn-primary">
+              <Plus className="w-4 h-4" />
               Ajouter un {businessConfig.terminology.product.toLowerCase()}
             </button>
           </div>

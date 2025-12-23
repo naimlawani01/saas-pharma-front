@@ -139,45 +139,45 @@ export default function CustomersPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-display font-bold text-gray-900">Clients</h1>
-          <p className="text-gray-500">{totalItems} client(s) enregistré(s)</p>
+          <h1 className="text-2xl font-display font-bold text-slate-900">Clients</h1>
+          <p className="text-slate-500 mt-1">{totalItems} client(s) enregistré(s)</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={handleExport} className="btn-secondary flex items-center gap-2">
-            <FileSpreadsheet className="w-5 h-5" />
-            Exporter
+        <div className="flex flex-wrap gap-2">
+          <button onClick={handleExport} className="btn-secondary">
+            <FileSpreadsheet className="w-4 h-4" />
+            <span className="hidden sm:inline">Exporter</span>
           </button>
-          <button onClick={handleAdd} className="btn-primary flex items-center gap-2">
-            <Plus className="w-5 h-5" />
-            Ajouter un client
+          <button onClick={handleAdd} className="btn-primary">
+            <Plus className="w-4 h-4" />
+            Ajouter
           </button>
         </div>
       </div>
 
       {/* Search */}
-      <div className="card">
+      <div className="bg-white rounded-2xl p-5 shadow-lg shadow-slate-200/50 border border-slate-100">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher par nom, téléphone..."
-              className="input pl-10"
+              className="w-full pl-12 pr-4 py-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all placeholder:text-slate-400"
             />
           </div>
           <button
             onClick={handleRefresh}
             disabled={isFetching}
-            className="btn-secondary flex items-center gap-2"
+            className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-medium flex items-center gap-2 transition-colors disabled:opacity-50"
           >
-            <RefreshCw className={clsx('w-5 h-5', isFetching && 'animate-spin')} />
-            Actualiser
+            <RefreshCw className={clsx('w-4 h-4', isFetching && 'animate-spin')} />
+            <span className="hidden sm:inline">Actualiser</span>
           </button>
         </div>
       </div>
@@ -185,50 +185,55 @@ export default function CustomersPage() {
       {/* Customers grid */}
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-purple-600 border-t-transparent"></div>
+            <p className="text-sm text-slate-500">Chargement...</p>
+          </div>
         </div>
       ) : customers && customers.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {paginatedCustomers.map((customer) => (
-            <div key={customer.id} className="card hover:shadow-md transition-shadow">
+            <div key={customer.id} className="group bg-white rounded-2xl p-5 shadow-lg shadow-slate-200/50 border border-slate-100 hover:shadow-xl transition-all duration-300">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                    <span className="text-lg font-semibold text-primary-700">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-200">
+                    <span className="text-lg font-bold text-white">
                       {customer.first_name[0]}{customer.last_name[0]}
                     </span>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">
+                    <h3 className="font-semibold text-slate-900">
                       {customer.first_name} {customer.last_name}
                     </h3>
                     <span className={clsx(
-                      'badge text-xs',
-                      customer.is_active ? 'badge-success' : 'badge-danger'
+                      'inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium mt-1',
+                      customer.is_active 
+                        ? 'bg-emerald-50 text-emerald-700' 
+                        : 'bg-red-50 text-red-700'
                     )}>
                       {customer.is_active ? 'Actif' : 'Inactif'}
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button 
                     onClick={() => handleViewHistory(customer)}
-                    className="p-2 hover:bg-blue-50 rounded-lg"
+                    className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
                     title="Historique des achats"
                   >
                     <History className="w-4 h-4 text-blue-500" />
                   </button>
                   <button 
                     onClick={() => handleEdit(customer)}
-                    className="p-2 hover:bg-gray-100 rounded-lg"
+                    className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
                     title="Modifier"
                   >
-                    <Edit className="w-4 h-4 text-gray-500" />
+                    <Edit className="w-4 h-4 text-slate-500" />
                   </button>
                   <button 
                     onClick={() => handleDelete(customer)}
-                    className="p-2 hover:bg-red-50 rounded-lg"
+                    className="p-2 hover:bg-red-50 rounded-xl transition-colors"
                     title="Supprimer"
                   >
                     <Trash2 className="w-4 h-4 text-red-500" />
@@ -236,35 +241,39 @@ export default function CustomersPage() {
                 </div>
               </div>
               
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2.5 text-sm">
                 {customer.phone && (
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Phone className="w-4 h-4" />
+                  <div className="flex items-center gap-3 text-slate-600">
+                    <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
+                      <Phone className="w-4 h-4 text-slate-500" />
+                    </div>
                     <span>{customer.phone}</span>
                   </div>
                 )}
                 {customer.email && (
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Mail className="w-4 h-4" />
+                  <div className="flex items-center gap-3 text-slate-600">
+                    <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
+                      <Mail className="w-4 h-4 text-slate-500" />
+                    </div>
                     <span className="truncate">{customer.email}</span>
                   </div>
                 )}
               </div>
               
               {customer.allergies && (
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-red-500 mt-0.5" />
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <div className="flex items-start gap-3 bg-red-50/50 rounded-xl p-3">
+                    <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <span className="text-xs font-medium text-red-600">Allergies:</span>
-                      <p className="text-sm text-gray-600">{customer.allergies}</p>
+                      <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">Allergies</span>
+                      <p className="text-sm text-red-700 mt-0.5">{customer.allergies}</p>
                     </div>
                   </div>
                 </div>
               )}
               
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs text-gray-400">
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <p className="text-xs text-slate-400">
                   Client depuis le {new Date(customer.created_at).toLocaleDateString('fr-FR')}
                 </p>
               </div>
@@ -274,7 +283,7 @@ export default function CustomersPage() {
           
           {/* Pagination */}
           {totalItems > 0 && (
-            <div className="card">
+            <div className="bg-white rounded-2xl p-4 shadow-lg shadow-slate-200/50 border border-slate-100">
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
@@ -287,11 +296,15 @@ export default function CustomersPage() {
           )}
         </>
       ) : (
-        <div className="card">
-          <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-            <Users className="w-12 h-12 mb-4 text-gray-300" />
-            <p>Aucun client trouvé</p>
-            <button onClick={handleAdd} className="mt-4 btn-primary">
+        <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-100">
+          <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+              <Users className="w-8 h-8 text-slate-400" />
+            </div>
+            <p className="text-lg font-medium text-slate-700 mb-1">Aucun client trouvé</p>
+            <p className="text-sm text-slate-500 mb-6">Commencez par ajouter votre premier client</p>
+            <button onClick={handleAdd} className="btn-primary">
+              <Plus className="w-4 h-4" />
               Ajouter un client
             </button>
           </div>

@@ -147,76 +147,79 @@ export default function StockMovementsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-purple-600 border-t-transparent"></div>
+          <p className="text-sm text-slate-500">Chargement...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-display font-bold text-gray-900">Historique des Mouvements</h1>
-          <p className="text-gray-500 mt-1">
+          <h1 className="text-2xl font-display font-bold text-slate-900">Historique des Mouvements</h1>
+          <p className="text-slate-500 mt-1">
             {totalItems} mouvement(s) de stock
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button 
             onClick={handleExportExcel}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary"
             title="Export Excel"
           >
-            <FileSpreadsheet className="w-5 h-5" />
-            Excel
+            <FileSpreadsheet className="w-4 h-4" />
+            <span className="hidden sm:inline">Excel</span>
           </button>
           <button 
             onClick={handleExportPDF}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary"
             title="Export PDF"
           >
-            <FileText className="w-5 h-5" />
-            PDF
+            <FileText className="w-4 h-4" />
+            <span className="hidden sm:inline">PDF</span>
           </button>
           <button 
             onClick={() => refetch()} 
             disabled={isFetching}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary"
           >
-            <RefreshCw className={`w-5 h-5 ${isFetching ? 'animate-spin' : ''}`} />
-            Actualiser
+            <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Actualiser</span>
           </button>
         </div>
       </div>
 
       {/* Filtres */}
-      <div className="card p-5">
+      <div className="bg-white rounded-2xl p-5 shadow-lg shadow-slate-200/50 border border-slate-100">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
               Recherche
             </label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Rechercher par produit, notes..."
-                className="input pl-10 w-full"
+                className="w-full pl-12 pr-4 py-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all placeholder:text-slate-400"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
               Type de mouvement
             </label>
             <select
               value={movementTypeFilter}
               onChange={(e) => setMovementTypeFilter(e.target.value as MovementType | '')}
-              className="input w-full"
+              className="w-full px-4 py-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all text-slate-700"
             >
               <option value="">Tous les types</option>
               {Object.entries(MOVEMENT_TYPE_LABELS).map(([key, label]) => (
@@ -228,69 +231,71 @@ export default function StockMovementsPage() {
       </div>
 
       {/* Table */}
-      <div className="card overflow-hidden p-0">
+      <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-100 overflow-hidden">
         {filteredMovements.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-            <Package className="w-16 h-16 text-gray-300 mb-4" />
-            <p className="text-lg font-medium">Aucun mouvement de stock trouvé</p>
-            <p className="text-sm mt-1">Les mouvements apparaîtront ici après vos opérations</p>
+          <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+              <Package className="w-8 h-8 text-slate-400" />
+            </div>
+            <p className="text-lg font-medium text-slate-700 mb-1">Aucun mouvement de stock trouvé</p>
+            <p className="text-sm text-slate-500">Les mouvements apparaîtront ici après vos opérations</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
                       Date & Heure
                     </div>
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <Tag className="w-4 h-4" />
                       Type
                     </div>
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <Package className="w-4 h-4" />
                       Produit
                     </div>
                   </th>
-                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Quantité
                   </th>
-                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Stock Avant
                   </th>
-                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Stock Après
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Référence
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Notes
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
+              <tbody className="divide-y divide-slate-50">
                 {paginatedMovements.map((movement) => (
                   <tr 
                     key={movement.id} 
-                    className="hover:bg-gray-50 transition-colors duration-150"
+                    className="hover:bg-slate-50/80 transition-colors"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm">
-                        <div className="font-semibold text-gray-900">
+                        <div className="font-semibold text-slate-900">
                           {new Date(movement.created_at).toLocaleDateString('fr-FR', {
                             day: '2-digit',
                             month: 'short',
                             year: 'numeric'
                           })}
                         </div>
-                        <div className="text-gray-500 text-xs mt-0.5">
+                        <div className="text-slate-500 text-xs mt-0.5">
                           {new Date(movement.created_at).toLocaleTimeString('fr-FR', {
                             hour: '2-digit',
                             minute: '2-digit'
@@ -301,13 +306,13 @@ export default function StockMovementsPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col gap-1.5">
                         <span className={clsx(
-                          'badge text-xs font-semibold border',
+                          'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold',
                           MOVEMENT_TYPE_COLORS[movement.movement_type]
                         )}>
                           {MOVEMENT_TYPE_LABELS[movement.movement_type]}
                         </span>
                         {movement.movement_type === 'adjustment' && movement.notes && movement.notes.startsWith('Raison:') && (
-                          <span className="text-xs text-blue-700 font-medium bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
+                          <span className="text-xs text-blue-700 font-medium bg-blue-50 px-2 py-0.5 rounded-lg">
                             {movement.notes.split(' - ')[0].replace('Raison: ', '')}
                           </span>
                         )}
@@ -315,15 +320,15 @@ export default function StockMovementsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Package className="w-5 h-5 text-primary-600" />
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <Package className="w-5 h-5 text-purple-600" />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-sm font-semibold text-gray-900 truncate">
+                          <div className="text-sm font-semibold text-slate-900 truncate">
                             {movement.product?.name || `Produit #${movement.product_id}`}
                           </div>
                           {movement.product?.barcode && (
-                            <div className="text-xs text-gray-500 mt-0.5">
+                            <div className="text-xs text-slate-500 mt-0.5 font-mono">
                               {movement.product.barcode}
                             </div>
                           )}
@@ -333,39 +338,39 @@ export default function StockMovementsPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         {movement.quantity > 0 ? (
-                          <ArrowUpCircle className="w-5 h-5 text-green-600" />
+                          <ArrowUpCircle className="w-5 h-5 text-emerald-600" />
                         ) : (
                           <ArrowDownCircle className="w-5 h-5 text-red-600" />
                         )}
                         <span className={clsx(
                           'font-bold text-sm',
-                          movement.quantity > 0 ? 'text-green-600' : 'text-red-600'
+                          movement.quantity > 0 ? 'text-emerald-600' : 'text-red-600'
                         )}>
                           {movement.quantity > 0 ? '+' : ''}{movement.quantity}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className="text-sm font-medium text-gray-600 bg-gray-50 px-3 py-1 rounded-md">
+                      <span className="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
                         {movement.quantity_before}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className="text-sm font-bold text-gray-900 bg-primary-50 px-3 py-1 rounded-md">
+                      <span className="text-sm font-bold text-slate-900 bg-purple-50 px-3 py-1 rounded-lg">
                         {movement.quantity_after}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {movement.reference_type && movement.reference_id ? (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700">
                           {REFERENCE_TYPE_LABELS[movement.reference_type] || movement.reference_type} #{movement.reference_id}
                         </span>
                       ) : (
-                        <span className="text-sm text-gray-400">-</span>
+                        <span className="text-sm text-slate-400">-</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-600 max-w-xs">
+                      <div className="text-sm text-slate-600 max-w-xs">
                         {movement.notes ? (
                           <div className="truncate" title={movement.notes}>
                             {movement.notes.split(' - ').length > 1 
@@ -374,7 +379,7 @@ export default function StockMovementsPage() {
                             }
                           </div>
                         ) : (
-                          <span className="text-gray-400">-</span>
+                          <span className="text-slate-400">-</span>
                         )}
                       </div>
                     </td>
