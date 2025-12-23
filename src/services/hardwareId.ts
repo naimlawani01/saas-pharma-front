@@ -3,29 +3,6 @@
  * Utilisé pour l'activation et la vérification des licences.
  */
 
-// Type pour l'API Electron (fonctions asynchrones via IPC)
-interface ElectronAPI {
-  getHardwareId: () => Promise<string>;
-  getSystemInfo: () => Promise<{
-    hostname: string;
-    platform: string;
-    arch: string;
-    type: string;
-    release: string;
-    totalmem: number;
-    homedir: string;
-    cpus: string;
-    cpuCount: number;
-  }>;
-}
-
-declare global {
-  interface Window {
-    electron?: boolean;
-    electronAPI?: ElectronAPI;
-  }
-}
-
 /**
  * Vérifie si on est dans Electron
  */

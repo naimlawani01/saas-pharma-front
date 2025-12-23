@@ -302,15 +302,16 @@ export default function LicensesSection() {
         isOpen={!!licenseToDelete}
         title="Supprimer la licence"
         message={`Êtes-vous sûr de vouloir supprimer la licence ${licenseToDelete?.license_key} ? Cette action est irréversible.`}
-        confirmLabel="Supprimer"
-        cancelLabel="Annuler"
+        confirmText="Supprimer"
+        cancelText="Annuler"
         onConfirm={() => {
           if (licenseToDelete) {
             deleteMutation.mutate(licenseToDelete.id);
           }
+          setLicenseToDelete(null);
         }}
-        onCancel={() => setLicenseToDelete(null)}
-        variant="danger"
+        onClose={() => setLicenseToDelete(null)}
+        type="danger"
       />
     </div>
   );

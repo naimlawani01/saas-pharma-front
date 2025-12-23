@@ -19,6 +19,18 @@ interface RestartBackendResult {
   error?: string;
 }
 
+interface SystemInfo {
+  hostname: string;
+  platform: string;
+  arch: string;
+  type: string;
+  release: string;
+  totalmem: number;
+  homedir: string;
+  cpus: string;
+  cpuCount: number;
+}
+
 interface Window {
   electron?: boolean;
   electronAPI?: {
@@ -32,6 +44,10 @@ interface Window {
     
     // Event listeners
     onBackendStatusChange: (callback: (status: BackendStatus) => void) => () => void;
+    
+    // Informations système pour les licences
+    getSystemInfo: () => Promise<SystemInfo>;
+    getHardwareId: () => Promise<string>;
   };
   electronDB?: {
     // Base de données SQLite via IPC
