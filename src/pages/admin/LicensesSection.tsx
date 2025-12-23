@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
-import { Key, Plus, Search, RefreshCw, Trash2, Eye, Copy, CheckCircle, AlertCircle, X } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { Key, Plus, Search, RefreshCw, Trash2, Eye, Copy, CheckCircle, AlertCircle, X, Check } from 'lucide-react';
 import clsx from 'clsx';
 import Modal from '@/components/ui/Modal';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 export default function LicensesSection() {
   const queryClient = useQueryClient();
@@ -13,6 +13,9 @@ export default function LicensesSection() {
   const [selectedLicense, setSelectedLicense] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [sectionError, setSectionError] = useState<string | null>(null);
+  const [sectionSuccess, setSectionSuccess] = useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [licenseToDelete, setLicenseToDelete] = useState<any>(null);
 
   // Récupérer les licences
   const { data: licenses, isLoading, refetch } = useQuery({
@@ -32,13 +35,24 @@ export default function LicensesSection() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-licenses'] });
-      toast.success('Licence supprimée');
+      setSectionSuccess('Licence supprimée avec succès');
       setSectionError(null);
+      setLicenseToDelete(null);
+      // Auto-hide après 3s
+      setTimeout(() => setSectionSuccess(null), 3000);
     },
     onError: (error: any) => {
       setSectionError(error.response?.data?.detail || 'Erreur lors de la suppression de la licence');
+      setLicenseToDelete(null);
     },
   });
+
+  // Fonction pour copier une clé
+  const handleCopyKey = (key: string) => {
+    navigator.clipboard.writeText(key);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
 
   const formatDate = (date: string | null) => {
     if (!date) return 'Jamais';
@@ -62,6 +76,25 @@ export default function LicensesSection() {
             className="flex-shrink-0 p-1.5 hover:bg-red-100 rounded-lg transition-colors"
           >
             <X className="h-4 w-4 text-red-500" />
+          </button>
+        </div>
+      )}
+      
+      {/* Affichage des succès */}
+      {sectionSuccess && (
+        <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+          <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <CheckCircle className="h-5 w-5 text-emerald-600" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-emerald-800">{sectionSuccess}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSectionSuccess(null)}
+            className="flex-shrink-0 p-1.5 hover:bg-emerald-100 rounded-lg transition-colors"
+          >
+            <X className="h-4 w-4 text-emerald-500" />
           </button>
         </div>
       )}
@@ -128,7 +161,9 @@ export default function LicensesSection() {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {licenses.map((license: any) => {
-                  const activeCount = license.activations?.filter((a: any) => a.is_active).length || 0;
+                  // Utiliser activations_count du backend, ou calculer depuis activations si disponible
+                  const activeCount = license.activations_count ?? 
+                    (license.activations?.filter((a: any) => a.is_active).length || 0);
                   return (
                     <tr key={license.id} className="group hover:bg-slate-50/80 transition-colors">
                       <td className="px-6 py-4">
@@ -138,14 +173,20 @@ export default function LicensesSection() {
                           </div>
                           <code className="font-mono text-sm font-semibold text-slate-900">{license.license_key}</code>
                           <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(license.license_key);
-                              toast.success('Clé copiée !');
-                            }}
-                            className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
-                            title="Copier la clé"
+                            onClick={() => handleCopyKey(license.license_key)}
+                            className={clsx(
+                              "p-1.5 rounded-lg transition-all",
+                              copiedKey === license.license_key 
+                                ? "bg-emerald-100 text-emerald-600" 
+                                : "hover:bg-slate-100 text-slate-400"
+                            )}
+                            title={copiedKey === license.license_key ? "Copié !" : "Copier la clé"}
                           >
-                            <Copy className="w-3.5 h-3.5 text-slate-400" />
+                            {copiedKey === license.license_key ? (
+                              <Check className="w-3.5 h-3.5" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
                           </button>
                         </div>
                       </td>
@@ -208,11 +249,7 @@ export default function LicensesSection() {
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => {
-                              if (confirm('Êtes-vous sûr de vouloir supprimer cette licence ?')) {
-                                deleteMutation.mutate(license.id);
-                              }
-                            }}
+                            onClick={() => setLicenseToDelete(license)}
                             className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Supprimer"
                           >
@@ -259,6 +296,22 @@ export default function LicensesSection() {
         }}
         license={selectedLicense}
       />
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={!!licenseToDelete}
+        title="Supprimer la licence"
+        message={`Êtes-vous sûr de vouloir supprimer la licence ${licenseToDelete?.license_key} ? Cette action est irréversible.`}
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        onConfirm={() => {
+          if (licenseToDelete) {
+            deleteMutation.mutate(licenseToDelete.id);
+          }
+        }}
+        onCancel={() => setLicenseToDelete(null)}
+        variant="danger"
+      />
     </div>
   );
 }
@@ -277,6 +330,15 @@ function CreateLicenseModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     notes: '',
   });
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
+  const [keyCopied, setKeyCopied] = useState(false);
+
+  const handleCopyGeneratedKey = () => {
+    if (generatedKey) {
+      navigator.clipboard.writeText(generatedKey);
+      setKeyCopied(true);
+      setTimeout(() => setKeyCopied(false), 2000);
+    }
+  };
 
   const { data: businesses } = useQuery({
     queryKey: ['admin-pharmacies'],
@@ -295,7 +357,7 @@ function CreateLicenseModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
       setGeneratedKey(license.license_key);
       setCreateError(null);
       queryClient.invalidateQueries({ queryKey: ['admin-licenses'] });
-      toast.success('Licence générée avec succès !');
+      // Le message de succès est affiché directement dans l'UI
     },
     onError: (error: any) => {
       setCreateError(error.response?.data?.detail || 'Erreur lors de la génération de la licence');
@@ -366,14 +428,20 @@ function CreateLicenseModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                   {generatedKey}
                 </code>
                 <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(generatedKey);
-                    toast.success('Clé copiée !');
-                  }}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
-                  title="Copier"
+                  onClick={handleCopyGeneratedKey}
+                  className={clsx(
+                    "p-2 rounded-lg transition-all",
+                    keyCopied 
+                      ? "bg-emerald-100 text-emerald-600" 
+                      : "hover:bg-gray-100 text-gray-600"
+                  )}
+                  title={keyCopied ? "Copié !" : "Copier"}
                 >
-                  <Copy className="w-5 h-5 text-gray-600" />
+                  {keyCopied ? (
+                    <Check className="w-5 h-5" />
+                  ) : (
+                    <Copy className="w-5 h-5" />
+                  )}
                 </button>
               </div>
             </div>
@@ -482,6 +550,16 @@ function CreateLicenseModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
 
 // License Detail Modal
 function LicenseDetailModal({ isOpen, onClose, license }: { isOpen: boolean; onClose: () => void; license: any }) {
+  const [detailKeyCopied, setDetailKeyCopied] = useState(false);
+
+  const handleCopyDetailKey = () => {
+    if (license?.license_key) {
+      navigator.clipboard.writeText(license.license_key);
+      setDetailKeyCopied(true);
+      setTimeout(() => setDetailKeyCopied(false), 2000);
+    }
+  };
+
   if (!license) return null;
 
   return (
@@ -493,13 +571,19 @@ function LicenseDetailModal({ isOpen, onClose, license }: { isOpen: boolean; onC
             <div className="flex items-center gap-2">
               <code className="font-mono font-semibold text-gray-900">{license.license_key}</code>
               <button
-                onClick={() => {
-                  navigator.clipboard.writeText(license.license_key);
-                  toast.success('Clé copiée !');
-                }}
-                className="p-1 hover:bg-gray-100 rounded"
+                onClick={handleCopyDetailKey}
+                className={clsx(
+                  "p-1 rounded transition-all",
+                  detailKeyCopied 
+                    ? "bg-emerald-100 text-emerald-600" 
+                    : "hover:bg-gray-100 text-gray-600"
+                )}
               >
-                <Copy className="w-4 h-4 text-gray-400" />
+                {detailKeyCopied ? (
+                  <Check className="w-4 h-4" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
               </button>
             </div>
           </div>

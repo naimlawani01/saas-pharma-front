@@ -3,6 +3,36 @@
  * Utilisé pour l'activation et la vérification des licences.
  */
 
+// Type pour l'API Electron (fonctions asynchrones via IPC)
+interface ElectronAPI {
+  getHardwareId: () => Promise<string>;
+  getSystemInfo: () => Promise<{
+    hostname: string;
+    platform: string;
+    arch: string;
+    type: string;
+    release: string;
+    totalmem: number;
+    homedir: string;
+    cpus: string;
+    cpuCount: number;
+  }>;
+}
+
+declare global {
+  interface Window {
+    electron?: boolean;
+    electronAPI?: ElectronAPI;
+  }
+}
+
+/**
+ * Vérifie si on est dans Electron
+ */
+function isElectron(): boolean {
+  return typeof window !== 'undefined' && window.electron === true;
+}
+
 /**
  * Génère un identifiant unique basé sur les caractéristiques matérielles de la machine.
  * Combine plusieurs identifiants système pour créer un hash unique.
@@ -10,9 +40,7 @@
 export async function generateHardwareId(): Promise<string> {
   try {
     // Vérifier si on est dans Electron
-    const isElectron = typeof window !== 'undefined' && (window as any).electron === true;
-    
-    if (!isElectron) {
+    if (!isElectron()) {
       // En mode web, utiliser localStorage avec un identifiant généré
       let hwId = localStorage.getItem('fanke_hardware_id');
       if (!hwId) {
@@ -22,61 +50,16 @@ export async function generateHardwareId(): Promise<string> {
       return hwId;
     }
     
-    // Dans Electron, utiliser le module os via dynamic import
-    // Note: Dans Electron, le module 'os' est disponible dans le renderer
-    const os = require('os');
-    
-    // Collecter les identifiants uniques
-    const identifiers: string[] = [];
-    
-    // 1. Hostname (nom de la machine)
-    identifiers.push(os.hostname());
-    
-    // 2. Plateforme et architecture
-    identifiers.push(os.platform());
-    identifiers.push(os.arch());
-    
-    // 3. Informations réseau (première interface réseau)
-    const networkInterfaces = os.networkInterfaces();
-    interface NetworkInterface {
-      internal?: boolean;
-      mac?: string;
-    }
-    const firstInterface = Object.values(networkInterfaces)
-      .flat()
-      .find((iface): iface is NetworkInterface => 
-        iface !== null && 
-        typeof iface === 'object' && 
-        !(iface as NetworkInterface).internal && 
-        (iface as NetworkInterface).mac !== '00:00:00:00:00:00'
-      );
-    if (firstInterface?.mac) {
-      identifiers.push(firstInterface.mac);
+    // Dans Electron, utiliser l'API exposée par le preload script (via IPC)
+    if (window.electronAPI?.getHardwareId) {
+      const hwId = await window.electronAPI.getHardwareId();
+      // Stocker dans localStorage pour réutilisation
+      localStorage.setItem('fanke_hardware_id', hwId);
+      return hwId;
     }
     
-    // 4. CPU (modèle et nombre de cœurs)
-    const cpus = os.cpus();
-    if (cpus.length > 0) {
-      identifiers.push(cpus[0].model);
-      identifiers.push(cpus.length.toString());
-    }
-    
-    // 5. Mémoire totale
-    identifiers.push(os.totalmem().toString());
-    
-    // 6. Home directory (chemin utilisateur)
-    identifiers.push(os.homedir());
-    
-    // Combiner tous les identifiants et créer un hash
-    const combined = identifiers.join('|');
-    
-    // Créer un hash SHA-256 (simple hash pour Electron)
-    const hash = await simpleHash(combined);
-    
-    // Stocker dans localStorage pour réutilisation
-    localStorage.setItem('fanke_hardware_id', hash);
-    
-    return hash;
+    // Fallback si l'API n'est pas disponible
+    throw new Error('electronAPI.getHardwareId non disponible');
   } catch (error) {
     console.error('Erreur lors de la génération du Hardware ID:', error);
     // Fallback: utiliser localStorage
@@ -90,29 +73,6 @@ export async function generateHardwareId(): Promise<string> {
 }
 
 /**
- * Hash simple utilisant une fonction de hashage basique.
- * En production, on pourrait utiliser crypto.subtle mais pour simplifier,
- * on utilise une fonction de hashage simple.
- */
-async function simpleHash(str: string): Promise<string> {
-  // Utiliser une fonction de hashage simple
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convertir en 32 bits
-  }
-  
-  // Convertir en hexadécimal et ajouter un préfixe
-  const hexHash = Math.abs(hash).toString(16).padStart(8, '0');
-  
-  // Ajouter un timestamp pour plus d'unicité (optionnel)
-  const timestamp = Date.now().toString(16).slice(-8);
-  
-  return `hw-${hexHash}-${timestamp}`;
-}
-
-/**
  * Obtient les informations système pour l'affichage (nom de machine, OS, etc.)
  */
 export async function getSystemInfo(): Promise<{
@@ -123,25 +83,32 @@ export async function getSystemInfo(): Promise<{
 }> {
   try {
     // Vérifier si on est dans Electron
-    const isElectron = typeof window !== 'undefined' && (window as any).electron === true;
-    
-    if (!isElectron) {
+    if (!isElectron()) {
       return {
-        machineName: navigator.userAgent,
+        machineName: navigator.userAgent.substring(0, 50),
         osInfo: 'Web Browser',
         platform: 'web',
         arch: 'unknown',
       };
     }
     
-    // Dans Electron, utiliser le module os
-    const os = require('os');
+    // Dans Electron, utiliser l'API exposée par le preload script (via IPC)
+    if (window.electronAPI?.getSystemInfo) {
+      const info = await window.electronAPI.getSystemInfo();
+      return {
+        machineName: info.hostname,
+        osInfo: `${info.type} ${info.release}`,
+        platform: info.platform,
+        arch: info.arch,
+      };
+    }
     
+    // Fallback
     return {
-      machineName: os.hostname(),
-      osInfo: `${os.type()} ${os.release()}`,
-      platform: os.platform(),
-      arch: os.arch(),
+      machineName: 'Electron App',
+      osInfo: 'Unknown',
+      platform: 'electron',
+      arch: 'unknown',
     };
   } catch (error) {
     console.error('Erreur lors de la récupération des informations système:', error);
@@ -153,4 +120,3 @@ export async function getSystemInfo(): Promise<{
     };
   }
 }
-

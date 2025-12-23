@@ -19,4 +19,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('backend-status-change', handler);
     return () => ipcRenderer.removeListener('backend-status-change', handler);
   },
+
+  // Informations système pour les licences (via IPC vers main process)
+  getSystemInfo: () => ipcRenderer.invoke('get-system-info'),
+
+  // Générer un Hardware ID unique (via IPC vers main process)
+  getHardwareId: () => ipcRenderer.invoke('get-hardware-id'),
 });

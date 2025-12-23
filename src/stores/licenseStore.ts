@@ -158,10 +158,13 @@ export const useLicenseStore = create<LicenseState>()(
               message: data.message || 'Licence valide.',
             };
           } else {
-            // Licence invalide
+            // Licence invalide - réinitialiser les données locales
             set({
               isActivated: false,
+              licenseKey: null,
+              activationToken: null,
               licenseStatus: (data.license_status as any) || 'none',
+              expiresAt: null,
               error: data.message || 'Licence invalide.',
             });
             
@@ -172,8 +175,13 @@ export const useLicenseStore = create<LicenseState>()(
           }
         } catch (error: any) {
           const errorMessage = error.response?.data?.detail || error.message || 'Erreur lors de la vérification.';
+          // Réinitialiser les données locales en cas d'erreur
           set({
             isActivated: false,
+            licenseKey: null,
+            activationToken: null,
+            licenseStatus: 'none',
+            expiresAt: null,
             error: errorMessage,
           });
           return {

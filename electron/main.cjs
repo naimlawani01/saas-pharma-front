@@ -3,6 +3,8 @@ const path = require('path');
 const { spawn } = require('child_process');
 const http = require('http');
 const fs = require('fs');
+const os = require('os');
+const crypto = require('crypto');
 
 // Désactiver l'accélération matérielle si problèmes
 // app.disableHardwareAcceleration();
@@ -370,4 +372,60 @@ ipcMain.handle('restart-backend', async () => {
     }
   }
   return { success: false, error: 'Failed to start backend' };
+});
+
+// Handlers pour les licences
+ipcMain.handle('get-system-info', () => {
+  return {
+    hostname: os.hostname(),
+    platform: os.platform(),
+    arch: os.arch(),
+    type: os.type(),
+    release: os.release(),
+    totalmem: os.totalmem(),
+    homedir: os.homedir(),
+    cpus: os.cpus().length > 0 ? os.cpus()[0].model : 'Unknown',
+    cpuCount: os.cpus().length,
+  };
+});
+
+ipcMain.handle('get-hardware-id', () => {
+  const identifiers = [];
+  
+  // Hostname
+  identifiers.push(os.hostname());
+  
+  // Platform et arch
+  identifiers.push(os.platform());
+  identifiers.push(os.arch());
+  
+  // Première interface réseau avec MAC
+  const networkInterfaces = os.networkInterfaces();
+  const interfaces = Object.values(networkInterfaces).flat();
+  const firstInterface = interfaces.find(
+    (iface) => iface && !iface.internal && iface.mac !== '00:00:00:00:00:00'
+  );
+  if (firstInterface && firstInterface.mac) {
+    identifiers.push(firstInterface.mac);
+  }
+  
+  // CPU info
+  const cpus = os.cpus();
+  if (cpus.length > 0) {
+    identifiers.push(cpus[0].model);
+    identifiers.push(cpus.length.toString());
+  }
+  
+  // Mémoire totale
+  identifiers.push(os.totalmem().toString());
+  
+  // Home directory
+  identifiers.push(os.homedir());
+  
+  // Créer un hash des identifiants
+  const combined = identifiers.join('|');
+  const hash = crypto.createHash('sha256').update(combined).digest('hex');
+  
+  // Retourner les 32 premiers caractères
+  return hash.substring(0, 32);
 });

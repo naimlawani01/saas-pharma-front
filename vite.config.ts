@@ -22,7 +22,15 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    hmr: false,
+    hmr: {
+      // Désactiver complètement le WebSocket HMR pour Electron
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5173,
+      overlay: false,
+    },
+    // Permettre les connexions depuis Electron
+    cors: true,
   },
   build: {
     outDir: 'dist',
