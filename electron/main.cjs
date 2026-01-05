@@ -267,6 +267,14 @@ function stopBackend() {
 }
 
 function createWindow() {
+  // Chemin du preload - différent en dev et en production
+  const preloadPath = isDev
+    ? path.join(__dirname, 'preload.cjs')
+    : path.join(app.getAppPath(), 'electron', 'preload.cjs');
+  
+  console.log('[Electron] Preload path:', preloadPath);
+  console.log('[Electron] Preload exists:', fs.existsSync(preloadPath));
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -275,12 +283,14 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.cjs'),
+      preload: preloadPath,
       contentSecurityPolicy: isDev
         ? "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* ws://localhost:* data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:*; style-src 'self' 'unsafe-inline';"
         : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:8000;",
     },
-    icon: path.join(__dirname, '../public/favicon.svg'),
+    icon: isDev 
+      ? path.join(__dirname, '../public/favicon.svg')
+      : path.join(app.getAppPath(), 'dist', 'favicon.svg'),
     titleBarStyle: 'default',
     show: false,
   });
@@ -289,7 +299,9 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    const indexPath = path.join(app.getAppPath(), 'dist', 'index.html');
+    console.log('[Electron] Loading:', indexPath);
+    mainWindow.loadFile(indexPath);
   }
 
   mainWindow.once('ready-to-show', () => {

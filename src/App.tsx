@@ -199,6 +199,19 @@ function LicenseChecker({ children }: { children: React.ReactNode }) {
   // La licence n'est requise QUE en mode Electron (application desktop)
   const requiresLicense = isElectron();
 
+  // Debug - à supprimer après résolution
+  console.log('[LicenseChecker] Debug:', {
+    path: location.pathname,
+    isElectron: isElectron(),
+    requiresLicense,
+    isAuthenticated,
+    userRole: user?.role,
+    isSuperUser: user?.is_superuser,
+    isPublicPage,
+    isChecking,
+    isLicenseValid,
+  });
+
   useEffect(() => {
     // Si pas en mode Electron, pas besoin de licence (mode web = abonnement)
     if (!requiresLicense) {
