@@ -271,9 +271,6 @@ function createWindow() {
   const preloadPath = isDev
     ? path.join(__dirname, 'preload.cjs')
     : path.join(app.getAppPath(), 'electron', 'preload.cjs');
-  
-  console.log('[Electron] Preload path:', preloadPath);
-  console.log('[Electron] Preload exists:', fs.existsSync(preloadPath));
 
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -300,7 +297,6 @@ function createWindow() {
     mainWindow.webContents.openDevTools();
   } else {
     const indexPath = path.join(app.getAppPath(), 'dist', 'index.html');
-    console.log('[Electron] Loading:', indexPath);
     mainWindow.loadFile(indexPath);
   }
 
